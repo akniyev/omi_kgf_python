@@ -1,5 +1,6 @@
 import math
 from scipy.fftpack import dct, idct
+import numpy
 
 class FunctionApproximator:
     def __init__(self):
@@ -42,6 +43,17 @@ class FunctionApproximator:
             discretized_function.append(f(self.node(i, grid_size)))
 
         return discretized_function
+
+    def discretize_function_2d(self, f, grid_size = -1):
+        if grid_size == -1:
+            grid_size = self.grid_size
+        discrete_function = numpy.zeros((grid_size, grid_size))
+
+        for i in range(grid_size):
+            for j in range(grid_size):
+                discrete_function[i, j] = f(self.node(i, grid_size), self.node(j, grid_size))
+
+        return discrete_function
 
     def phi(self, k, x):
         if k == 0:
@@ -91,6 +103,54 @@ class FunctionApproximator:
         for i in range(len(coefficients)):
             function_values.append(self.calculate_function_value_from_fourier_coefficients(coefficients, self.node(i, grid_size), grid_size))
         return function_values
+
+    # Fast 1D DCT-II
+
+    @staticmethod
+    def calculate_fourier_transform_1d_fast(discrete_function):
+        grid_size = len(discrete_function)
+        dct_coefficients = dct(discrete_function, type=2).tolist()
+        normalized = list(map(lambda x: x / math.sqrt(2) / grid_size, dct_coefficients))
+        normalized[0] /= math.sqrt(2)
+        return normalized
+
+    @staticmethod
+    def calculate_inverse_fourier_transform_1d_fast(coefficients):
+        coeff = coefficients[:]
+        coeff[0] *= math.sqrt(2)
+        coeff = list(map(lambda x: x / math.sqrt(2), coeff))
+        function_values = idct(coeff, type=2)
+        return function_values
+
+    # Fast 2D DCT-II
+
+    @staticmethod
+    def calculate_fourier_transform_2d_fast(discrete_function):
+        grid_size = len(discrete_function)
+
+        # Transform rows
+
+        for i in range(grid_size):
+            discrete_function[i, :] = FunctionApproximator.calculate_fourier_transform_1d_fast(discrete_function[i, :])
+
+        for i in range(grid_size):
+            discrete_function[:, i] = FunctionApproximator.calculate_fourier_transform_1d_fast(discrete_function[:, i])
+
+        return discrete_function
+
+    @staticmethod
+    def calculate_inverse_fourier_transform_2d_fast(coefficients):
+        grid_size = len(coefficients)
+
+        # Transform rows
+
+        for i in range(grid_size):
+            coefficients[i, :] = FunctionApproximator.calculate_inverse_fourier_transform_1d_fast(coefficients[i, :])
+
+        for i in range(grid_size):
+            coefficients[:, i] = FunctionApproximator.calculate_inverse_fourier_transform_1d_fast(coefficients[:, i])
+
+        return coefficients
 
     @staticmethod
     def power_of_two(n):
