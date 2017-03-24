@@ -2,6 +2,7 @@ import math
 from scipy.fftpack import dct, idct
 import numpy
 
+
 class FunctionApproximator:
     def __init__(self):
         self.__gridSize = 32

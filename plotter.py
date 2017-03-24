@@ -19,7 +19,7 @@ def f(x):
 
 fa = FunctionApproximator()
 
-fa.grid_size = 1024
+fa.grid_size = 128
 
 # Draw 2D function k
 
