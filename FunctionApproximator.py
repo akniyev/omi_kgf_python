@@ -110,7 +110,7 @@ class FunctionApproximator:
     def calculate_fourier_transform_1d_fast(discrete_function):
         grid_size = len(discrete_function)
         dct_coefficients = dct(discrete_function, type=2).tolist()
-        normalized = list(map(lambda x: x / math.sqrt(2) / grid_size, dct_coefficients))
+        normalized = list(map(lambda x: x / grid_size, dct_coefficients))
         normalized[0] /= math.sqrt(2)
         return normalized
 
@@ -118,7 +118,7 @@ class FunctionApproximator:
     def calculate_inverse_fourier_transform_1d_fast(coefficients):
         coeff = coefficients[:]
         coeff[0] *= math.sqrt(2)
-        coeff = list(map(lambda x: x / math.sqrt(2), coeff))
+        coeff = list(map(lambda x: x / 2, coeff))
         function_values = idct(coeff, type=2)
         return function_values
 
