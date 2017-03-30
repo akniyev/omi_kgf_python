@@ -37,20 +37,29 @@ if __name__ == '__main__':
 
     # calculating function and drawing it on the view
     n = 256
-    zs = [[0 for i in range(n)] for j in range(n)]
 
     xs = grid_nodes(n)
     ys = grid_nodes(n)
 
+    zs = [[0 for i in range(n)] for j in range(n)]
     for i in range(n):
         for j in range(n):
             x = xs[i]
             y = ys[j]
             zs[i][j] = k(x, y)
-
     zs = np.array(zs)
 
-    function_plot = gl.GLSurfacePlotItem(x=xs, y=ys, z=zs, shader='normalColor')
+    zs1 = [[0 for i in range(n)] for j in range(n)]
+    for i in range(n):
+        for j in range(n):
+            x = xs[i]
+            y = ys[j]
+            zs1[i][j] = k(x, y) * 0.9
+    zs1 = np.array(zs1)
+
+    function_plot = gl.GLSurfacePlotItem(x=xs, y=ys, z=zs, color=(1, 0, 0, 1), shader='shaded')
+    view.addItem(function_plot)
+    function_plot = gl.GLSurfacePlotItem(x=xs, y=ys, z=zs1, color=(0, 1, 0, 1), shader='shaded')
     view.addItem(function_plot)
 
     # add axises

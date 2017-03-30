@@ -4,9 +4,9 @@ from PyQt5.QtWidgets import (QWidget, QGridLayout, QPushButton, QApplication)
 class Example(QWidget):
     def __init__(self):
         super().__init__()
-        self.initUI()
+        self.init_ui()
 
-    def initUI(self):
+    def init_ui(self):
         grid = QGridLayout()
         self.setLayout(grid)
 
@@ -15,7 +15,7 @@ class Example(QWidget):
                  '4', '5', '6', '*',
                  '0', '.', '=', '+']
 
-        positions = [(i,j) for i in range(5) for j in range(4)]
+        positions = [(i, j) for i in range(5) for j in range(4)]
 
         for position, name in zip(positions, names):
             if name == '':
