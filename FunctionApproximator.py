@@ -1,6 +1,6 @@
 import math
 from scipy.fftpack import dct, idct
-import numpy
+import numpy as np
 
 
 class FunctionApproximator:
@@ -48,7 +48,7 @@ class FunctionApproximator:
     def discretize_function_2d(self, f, grid_size = -1):
         if grid_size == -1:
             grid_size = self.grid_size
-        discrete_function = numpy.zeros((grid_size, grid_size))
+        discrete_function = np.zeros((grid_size, grid_size))
 
         for i in range(grid_size):
             for j in range(grid_size):
@@ -127,6 +127,7 @@ class FunctionApproximator:
 
     @staticmethod
     def calculate_fourier_transform_2d_fast(discrete_function):
+        discrete_function = np.array(discrete_function)
         grid_size = len(discrete_function)
 
         # Transform rows
@@ -141,6 +142,7 @@ class FunctionApproximator:
 
     @staticmethod
     def calculate_inverse_fourier_transform_2d_fast(coefficients):
+        coefficients = np.array(coefficients)
         grid_size = len(coefficients)
 
         # Transform rows
