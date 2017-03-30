@@ -10,11 +10,17 @@ from numpy.linalg import inv
 
 
 def k(x, y):
-    return 1.0 / (fabs(sin(x + y)) + 0.1)
+    # return 1.0 / (fabs(sin(x + y)) + 0.1)
+    return - 1.0 / (fabs(sin((x + y) / 1.01)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
+    # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
+    # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
+    # return 1.0 / ((x + y) ** 0.5 + sin(x) + 0.1)
+    # return 1.0 / (fabs(sin(x) * cos(y)) + 0.1)
 
 
 def f(x):
-    return cos(x)
+    return sin(10 * x) / x
+    # return 1 / (sin(x) + 0.1)
 
 
 if __name__ == '__main__':
@@ -27,10 +33,11 @@ if __name__ == '__main__':
     graph2d_2 = pg.PlotWidget()
     graph2d_3 = pg.PlotWidget()
     graph2d_4 = pg.PlotWidget()
+    graph2d_5 = pg.PlotWidget()
 
     # making new approximator
     fa = FunctionApproximator()
-    fa.grid_size = 128
+    fa.grid_size = 256
 
     # making discrete functions from above
     k_discrete = np.array(fa.discretize_function_2d(k))
@@ -59,11 +66,36 @@ if __name__ == '__main__':
     k_coeff_3d_plot = gl.GLSurfacePlotItem(x=x_grid, y=y_grid, z=k_coeffs, color=(1, 0, 0, 1), shader='shaded')
     graph3d_2.addItem(k_coeff_3d_plot)
 
-    graph2d_1.plotItem.plot(x_grid, f_discrete)
+    gp1_1 = graph2d_1.plot()
+    gp1_1.setData(x=x_grid, y=f_discrete)
+
     graph2d_2.plotItem.plot(f_coeffs, symbol='o')
 
-    graph2d_3.plotItem.plot(x_grid, g_coeffs, "Calculated coefficients of g")
-    graph2d_4.plotItem.plot(x_grid, g_restored, "Calculated values of g")
+    gp3 = graph2d_3.plot()
+    gp4 = graph2d_4.plot()
+
+    gp3.setData(x=x_grid, y=g_coeffs)
+    gp4.setData(x=x_grid, y=g_restored)
+
+    # computing restored f from k(x, y) and obtained g(x)
+    f_restored = np.array([0.0 for i in range(x_grid.shape[0])])
+    for i in range(x_grid.shape[0]):
+        f_i = 0
+        for j in range(y_grid.shape[0]):
+            f_i += k_discrete[i, j] * g_restored[j]
+        f_i = f_i * 2.0 / fa.grid_size # TODO: I need to find out why this scaling coefficient is needed
+        f_restored[i] = f_i
+
+    # plot restored f(x)
+    # pg.plot(x_grid, f_restored, title='f(x) restored')
+    # graph2d_1.plotItem.addLine()
+    gp5 = graph2d_5.plot()
+    gp5.setData(x=x_grid, y=f_restored)
+
+    gp1_2 = graph2d_1.plot()
+    gp1_2.setPen((200, 50, 50))
+    gp1_2.setData(x=x_grid, y=f_restored)
+
 
     # adding plots to tab bar
     tab_widget = QTabWidget()
@@ -74,6 +106,7 @@ if __name__ == '__main__':
     tab_widget.addTab(graph2d_2, "f(x) coefficients")
     tab_widget.addTab(graph2d_3, "g(x) coefficients (restored)")
     tab_widget.addTab(graph2d_4, "g(x) values (restored)")
+    tab_widget.addTab(graph2d_5, "f(x) restored")
 
     
     # adding table views
