@@ -7,11 +7,14 @@ import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 from FunctionApproximator import *
 from numpy.linalg import inv
+from SettingsPanel import *
 
 
 def k(x, y):
+    C = 0.1
+    return 1.0 / (x ** 2 + y ** 2 + C)
     # return 1.0 / (fabs(sin(x + y)) + 0.1)
-    return - 1.0 / (fabs(sin((x + y) / 1.01)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
+    # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
     # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
     # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
     # return 1.0 / ((x + y) ** 0.5 + sin(x) + 0.1)
@@ -19,25 +22,24 @@ def k(x, y):
 
 
 def f(x):
-    return sin(10 * x) / x
+    return sin(3*x) / x
+    # return fabs(cos(3 * x))
     # return 1 / (sin(x) + 0.1)
 
+params = [
+        {'name': 'N', 'type': 'int', 'value': 64},
+        {'name': 'M', 'type': 'int', 'value': 16}
+    ]
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    graph3d_1 = gl.GLViewWidget()
-    axises = gl.GLAxisItem(QVector3D(pi, pi, pi))
-    graph3d_1.addItem(axises)
-    graph3d_2 = gl.GLViewWidget()
-    graph2d_1 = pg.PlotWidget()
-    graph2d_2 = pg.PlotWidget()
-    graph2d_3 = pg.PlotWidget()
-    graph2d_4 = pg.PlotWidget()
-    graph2d_5 = pg.PlotWidget()
+settings_panel = SettingsPanel(params)
+
+def calculate():
+    settings_panel.button_calculate.pressed.connect(calculate)
 
     # making new approximator
     fa = FunctionApproximator()
     fa.grid_size = 256
+    M = 16
 
     # making discrete functions from above
     k_discrete = np.array(fa.discretize_function_2d(k))
@@ -52,11 +54,79 @@ if __name__ == '__main__':
     y_grid = np.array(fa.get_grid())
 
     # computing g coefficients
-    k = k_coeffs
+    k = k_coeffs[0:, 0:M - 1]
     f = f_coeffs
     kt = k.transpose()
     ktk_1 = inv(kt.dot(k))
     g_coeffs = ktk_1.dot(kt).dot(f)
+
+    N = fa.grid_size
+
+    # adding zeros
+    zeros = np.zeros(N - M + 1)
+    g_coeffs = np.append(g_coeffs, zeros)
+
+    g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
+
+    # computing restored f from k(x, y) and obtained g(x)
+    f_restored = np.array([0.0 for i in range(x_grid.shape[0])])
+    for i in range(x_grid.shape[0]):
+        f_i = 0
+        for j in range(y_grid.shape[0]):
+            f_i += k_discrete[i, j] * g_restored[j]
+        f_i = f_i * 2.0 / fa.grid_size  # TODO: I need to find out why this scaling coefficient is needed
+        f_restored[i] = f_i
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+
+    window = QWidget()
+    hbox = QHBoxLayout()
+    window.setLayout(hbox)
+
+    settings_panel.button_calculate.pressed.connect(calculate)
+
+    graph3d_1 = gl.GLViewWidget()
+    axises = gl.GLAxisItem(QVector3D(pi, pi, pi))
+    graph3d_1.addItem(axises)
+    graph3d_2 = gl.GLViewWidget()
+    graph2d_1 = pg.PlotWidget()
+    graph2d_2 = pg.PlotWidget()
+    graph2d_3 = pg.PlotWidget()
+    graph2d_4 = pg.PlotWidget()
+    graph2d_5 = pg.PlotWidget()
+
+    # making new approximator
+    fa = FunctionApproximator()
+    fa.grid_size = 256
+    M = 16
+
+    # making discrete functions from above
+    k_discrete = np.array(fa.discretize_function_2d(k))
+    f_discrete = np.array(fa.discretize_function_1d(f))
+
+    # computing coefficients
+    k_coeffs = np.array(fa.calculate_fourier_transform_2d_fast(k_discrete))
+    f_coeffs = np.array(fa.calculate_fourier_transform_1d_fast(f_discrete))
+
+    # computing grid to draw this discrete functions
+    x_grid = np.array(fa.get_grid())
+    y_grid = np.array(fa.get_grid())
+
+    # computing g coefficients
+    k = k_coeffs[0:, 0:M-1]
+    f = f_coeffs
+    kt = k.transpose()
+    ktk_1 = inv(kt.dot(k))
+    g_coeffs = ktk_1.dot(kt).dot(f)
+
+    N = fa.grid_size
+
+    # adding zeros
+    zeros = np.zeros(N - M + 1)
+    g_coeffs = np.append(g_coeffs, zeros)
+
     g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
 
     # drawing functions and coefficients
@@ -108,7 +178,7 @@ if __name__ == '__main__':
     tab_widget.addTab(graph2d_4, "g(x) values (restored)")
     tab_widget.addTab(graph2d_5, "f(x) restored")
 
-    
+
     # adding table views
     table_widget = QTableWidget()
     table_widget.setRowCount(k_coeffs.shape[0])
@@ -119,7 +189,11 @@ if __name__ == '__main__':
 
     tab_widget.addTab(table_widget, "k(x, y) coefficients table")
 
-    tab_widget.show()
+    hbox.addWidget(tab_widget)
+    settings_panel.setFixedWidth(250)
+    hbox.addWidget(settings_panel)
+
+    window.show()
     sys.exit(app.exec_())
 
 
