@@ -70,7 +70,7 @@ class MultiPlot3d(QWidget):
             description = self.__plot_data__[key].description
             item.setText(key)
             item.setCheckable(True)
-            item.setCheckState(Qt.Checked)
+            item.setCheckState(Qt.Checked if self.__plot_data__[key].visible else Qt.Unchecked)
             self.__legend_model__.appendRow(item)
         self.redraw()
 
