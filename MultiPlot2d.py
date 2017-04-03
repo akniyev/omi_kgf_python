@@ -2,9 +2,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
-import numpy as np
-import math
-from random import random, randrange
+from random import randrange
 
 
 class PlotInfo:
@@ -57,8 +55,8 @@ class MultiPlot2d(QWidget):
     def clear_plot_data(self, name):
         if name in self.__plot_data__:
             plot_info = self.__plot_data__[name]
-            plot_info[1] = []
-            plot_info[2] = []
+            plot_info.xs = []
+            plot_info.ys = []
         else:
             print('No plot with this name')
 
