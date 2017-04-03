@@ -2,13 +2,18 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
+import numpy as np
+import math
+from random import random, randrange
 
 
 class PlotInfo:
-    def __init__(self, name, description=""):
+    def __init__(self, name, color, description=""):
         super().__init__()
         self.name = name
         self.description = description
+        self.visible = True
+        self.color = color
 
     name = ""
     description = ""
@@ -18,11 +23,13 @@ class PlotInfo:
 
 
 class MultiPlot2d(QWidget):
-    def add_plot(self, name, description=""):
+    def add_plot(self, name, color=0, description=""):
+        if color == 0:
+            color = (randrange(0, 255), randrange(0, 255), randrange(0, 255), 255)
         if name in self.__plot_data__:
             print('Plot with this name already exists!')
             return
-        self.__plot_data__[name] = PlotInfo(name, description)
+        self.__plot_data__[name] = PlotInfo(name, color, description)
 
     def remove_plot(self, name):
         if name in self.__plot_data__:
@@ -40,7 +47,7 @@ class MultiPlot2d(QWidget):
         if name in self.__plot_data__ and len(xs) == len(ys):
             plot_info = self.__plot_data__[name]
             if description == "":
-                description = plot_info[0]
+                description = plot_info.description
             plot_info.description = description
             plot_info.xs = xs
             plot_info.ys = ys
@@ -60,7 +67,7 @@ class MultiPlot2d(QWidget):
         for key in self.__plot_data__:
             item = QStandardItem()
             description = self.__plot_data__[key].description
-            item.setText(key + (' (' + description + ')' if description != "" else ""))
+            item.setText(key)
             item.setCheckable(True)
             item.setCheckState(Qt.Checked)
             self.__legend_model__.appendRow(item)
@@ -85,27 +92,45 @@ class MultiPlot2d(QWidget):
         self.__legend_model__.itemChanged.connect(self.legend_clicked)
 
     def legend_clicked(self, item):
+        name = item.text()
+        plot_info = self.__plot_data__[name]
+        if item.checkState() == Qt.Checked:
+            plot_info.visible = True
+        else:
+            plot_info.visible = False
         self.redraw()
 
     def redraw(self):
         pw = self.__plot_widget__
-        pw.
+        pw.clear()
 
+        for key in self.__plot_data__:
+            plot_info = self.__plot_data__[key]
+            if plot_info.visible:
+                pi = pg.PlotDataItem()
+
+                pw.addItem(pi)
+                print(plot_info.color)
+                pi.setData(x=plot_info.xs, y=plot_info.ys, pen=plot_info.color)
 
 import sys
 
-app = QApplication(sys.argv)
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
 
-multi_plot = MultiPlot2d()
-multi_plot.show()
+    multi_plot = MultiPlot2d()
+    multi_plot.show()
 
-multi_plot.add_plot('Plot1')
-multi_plot.add_plot('Plot2', 'Super plot')
+    multi_plot.add_plot('Plot1')
+    multi_plot.add_plot('Plot2', description='Super plot')
 
-multi_plot.refresh()
+    multi_plot.set_plot_data('Plot1', [1, 2, 3, 4, 5], [1, 2, 1, 2, 1])
+    multi_plot.set_plot_data('Plot2', [1, 2, 3, 4, 5], [-1, -2, -1, 2, 10])
+
+    multi_plot.refresh()
 
 
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
 
 
 
