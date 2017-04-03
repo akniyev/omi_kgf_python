@@ -46,10 +46,18 @@ class Form(QWidget):
         # end building UI
 
     @staticmethod
+    def print_2d_array_to_file(array_to_print, filename):
+        with open(filename, 'w') as file:
+            for row in array_to_print:
+                for item in row:
+                    file.write("\t\t{}".format(item))
+                file.write("\n")
+
+    @staticmethod
     def k(x, y):
         C = 0.1
-        # return 1.0 / (x ** 2 + y ** 2 + C)
-        return 1.0 / (fabs(sin(x + y)) + 0.1)
+        return 1.0 / (x ** 2 + y ** 2 + C)
+        # return 1.0 / (fabs(sin(x + y)) + 0.1)
         # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
         # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
         # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
@@ -66,6 +74,9 @@ class Form(QWidget):
         # computing g coefficients
         kc = kc.copy()
         k = kc[0:, 0:M]
+
+        self.print_2d_array_to_file(k, 'k_1.del')
+
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
         g_coeffs = ktk_1.dot(kt).dot(fc)
@@ -83,6 +94,9 @@ class Form(QWidget):
         for row in range(M, N):
             for col in range(M):
                 k[row, col] = 0
+
+        self.print_2d_array_to_file(k, 'k_2.del')
+
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
         g_coeffs = ktk_1.dot(kt).dot(fc)
@@ -101,8 +115,11 @@ class Form(QWidget):
             for col in range(M):
                 k[row, col] = 0
         for row in range(1, M):
-            for col in range(row, M):
+            for col in range(M-row, M):
                 k[row, col] = 0
+
+        self.print_2d_array_to_file(k, 'k_3_triangle.del')
+
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
         g_coeffs = ktk_1.dot(kt).dot(fc)
@@ -124,6 +141,9 @@ class Form(QWidget):
         for row in range(m, M):
             for col in range(m, M):
                 k[row, col] = 0
+
+        self.print_2d_array_to_file(k, 'k_4_corner.del')
+
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
         g_coeffs = ktk_1.dot(kt).dot(fc)
