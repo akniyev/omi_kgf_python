@@ -16,3 +16,5 @@ class SettingsPanel(QWidget):
         vbox.addWidget(t)
         vbox.addWidget(self.button_calculate)
         self.setLayout(vbox)
+
+

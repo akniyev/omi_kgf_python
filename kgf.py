@@ -8,6 +8,8 @@ import pyqtgraph.opengl as gl
 from FunctionApproximator import *
 from numpy.linalg import inv
 from SettingsPanel import *
+from MultiPlot2d import *
+from MultiPlot3d import *
 
 
 def k(x, y):
@@ -27,173 +29,147 @@ def f(x):
     # return 1 / (sin(x) + 0.1)
 
 params = [
-        {'name': 'N', 'type': 'int', 'value': 64},
+        {'name': 'logN', 'type': 'int', 'value': 5},
         {'name': 'M', 'type': 'int', 'value': 16}
     ]
 
-settings_panel = SettingsPanel(params)
 
-def calculate():
-    settings_panel.button_calculate.pressed.connect(calculate)
+class Form(QWidget):
+    def __init__(self):
+        super().__init__()
+        # Building UI
+        self.settings_panel = SettingsPanel(params)
+        self.tab_widget = QTabWidget()
+        hbox = QHBoxLayout()
+        self.setLayout(hbox)
+        self.settings_panel.button_calculate.pressed.connect(self.calculate)
+        self.settings_panel.setFixedWidth(250)
+        hbox.addWidget(self.tab_widget)
+        hbox.addWidget(self.settings_panel)
+        self.show()
 
-    # making new approximator
-    fa = FunctionApproximator()
-    fa.grid_size = 256
-    M = 16
+        self.plot_3d_kernel = MultiPlot3d('kernel')
+        self.plot_3d_kernel_coeffs = MultiPlot3d('kernel_coeffs')
+        self.plot_2d_func_f = MultiPlot2d('f', 'f_restored')
+        self.plot2d_coeffs_f = MultiPlot2d('f_coeffs')
+        self.plot2d_coeffs_g = MultiPlot2d('g_coeffs')
+        self. plot2d_func_g = MultiPlot2d('g_restored')
 
-    # making discrete functions from above
-    k_discrete = np.array(fa.discretize_function_2d(k))
-    f_discrete = np.array(fa.discretize_function_1d(f))
+        self.tab_widget.addTab(self.plot_3d_kernel, 'kernel')
+        self.tab_widget.addTab(self.plot_3d_kernel_coeffs, 'kernel coeffs')
+        self.tab_widget.addTab(self.plot_2d_func_f, 'f')
+        self.tab_widget.addTab(self.plot2d_coeffs_f, 'f coeffs')
+        self.tab_widget.addTab(self.plot2d_coeffs_g, 'g coeffs')
+        self.tab_widget.addTab(self.plot2d_func_g, 'g restored')
+        # end building UI
 
-    # computing coefficients
-    k_coeffs = np.array(fa.calculate_fourier_transform_2d_fast(k_discrete))
-    f_coeffs = np.array(fa.calculate_fourier_transform_1d_fast(f_discrete))
+    @staticmethod
+    def k(x, y):
+        C = 0.1
+        return 1.0 / (x ** 2 + y ** 2 + C)
+        # return 1.0 / (fabs(sin(x + y)) + 0.1)
+        # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
+        # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
+        # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
+        # return 1.0 / ((x + y) ** 0.5 + sin(x) + 0.1)
+        # return 1.0 / (fabs(sin(x) * cos(y)) + 0.1)
 
-    # computing grid to draw this discrete functions
-    x_grid = np.array(fa.get_grid())
-    y_grid = np.array(fa.get_grid())
+    @staticmethod
+    def f(x):
+        return sin(3 * x) / x
+        # return fabs(cos(3 * x))
+        # return 1 / (sin(x) + 0.1)
 
-    # computing g coefficients
-    k = k_coeffs[0:, 0:M - 1]
-    f = f_coeffs
-    kt = k.transpose()
-    ktk_1 = inv(kt.dot(k))
-    g_coeffs = ktk_1.dot(kt).dot(f)
+    def compute_g_coefficients_1(self, kc, fc, N, M):
+        # computing g coefficients
+        k = kc[0:, 0:M - 1]
+        kt = k.transpose()
+        ktk_1 = inv(kt.dot(k))
+        g_coeffs = ktk_1.dot(kt).dot(fc)
 
-    N = fa.grid_size
+        # adding zeros
+        zeros = np.zeros(N - M + 1)
+        g_coeffs = np.append(g_coeffs, zeros)
+        return g_coeffs
 
-    # adding zeros
-    zeros = np.zeros(N - M + 1)
-    g_coeffs = np.append(g_coeffs, zeros)
+    def calculate(self):
+        logN = self.settings_panel.parameter['logN']
+        M = self.settings_panel.parameter['M']
+        N = 2 ** logN
 
-    g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
+        if M > N:
+            return
 
-    # computing restored f from k(x, y) and obtained g(x)
-    f_restored = np.array([0.0 for i in range(x_grid.shape[0])])
-    for i in range(x_grid.shape[0]):
-        f_i = 0
-        for j in range(y_grid.shape[0]):
-            f_i += k_discrete[i, j] * g_restored[j]
-        f_i = f_i * 2.0 / fa.grid_size  # TODO: I need to find out why this scaling coefficient is needed
-        f_restored[i] = f_i
+        print("N = {}, M = {}".format(N, M))
+
+        # making new approximator
+        fa = FunctionApproximator()
+        fa.grid_size = N
+
+        # making discrete functions from above
+        k_discrete = np.array(fa.discretize_function_2d(self.k))
+        f_discrete = np.array(fa.discretize_function_1d(self.f))
+
+        # computing coefficients
+        k_coeffs = np.array(fa.calculate_fourier_transform_2d_fast(k_discrete))
+        f_coeffs = np.array(fa.calculate_fourier_transform_1d_fast(f_discrete))
+
+        # computing grid to draw this discrete functions
+        x_grid = np.array(fa.get_grid())
+        y_grid = np.array(fa.get_grid())
+
+        # computing g coefficients
+        g_coeffs = self.compute_g_coefficients_1(k_coeffs, f_coeffs, N, M)
+
+        g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
+
+        # computing restored f from k(x, y) and obtained g(x)
+        f_restored = np.array([0.0 for i in range(x_grid.shape[0])])
+        for i in range(x_grid.shape[0]):
+            f_i = 0
+            for j in range(y_grid.shape[0]):
+                f_i += k_discrete[i, j] * g_restored[j]
+            f_i = f_i * 2.0 / fa.grid_size  # TODO: I need to find out why this scaling coefficient is needed
+            f_restored[i] = f_i
+
+        # k_discrete
+        # k_coeffs
+        # f_discrete
+        # f_coeffs
+        # f_restored
+        # g_coeffs
+        # g_restored
+        # x_grid
+        # y_grid
+
+        # self.plot_3d_kernel = MultiPlot3d('kernel')
+        # self.plot_3d_kernel_coeffs = MultiPlot3d('kernel_coeffs')
+        # self.plot_2d_func_f = MultiPlot2d('f', 'f_restored')
+        # self.plot2d_coeffs_f = MultiPlot2d('f_coeffs')
+        # self.plot2d_coeffs_g = MultiPlot2d('g_coeffs')
+        # self.plot2d_func_g = MultiPlot2d('g_restored')
+
+        self.plot_3d_kernel.set_plot_data('kernel', xs=x_grid, ys=y_grid, zs=k_discrete)
+        self.plot_3d_kernel_coeffs.set_plot_data('kernel_coeffs', xs=x_grid, ys=y_grid, zs=k_coeffs)
+        self.plot_2d_func_f.set_plot_data('f', xs=x_grid, ys=f_discrete)
+        self.plot_2d_func_f.set_plot_data('f_restored', xs=x_grid, ys=f_restored)
+        self.plot2d_coeffs_f.set_plot_data('f_coeffs', xs=np.array([i for i in range(len(f_coeffs))]), ys=f_coeffs)
+        self.plot2d_coeffs_g.set_plot_data('g_coeffs', xs=np.array([i for i in range(len(g_coeffs))]), ys=g_coeffs)
+        self.plot2d_func_g.set_plot_data('g_restored', xs=x_grid, ys=g_restored)
+
+        self.plot_3d_kernel.refresh()
+        self.plot_3d_kernel_coeffs.refresh()
+        self.plot_2d_func_f.refresh()
+        self.plot2d_coeffs_f.refresh()
+        self.plot2d_coeffs_g.refresh()
+        self.plot2d_func_g.refresh()
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    window = QWidget()
-    hbox = QHBoxLayout()
-    window.setLayout(hbox)
+    form = Form()
 
-    settings_panel.button_calculate.pressed.connect(calculate)
+    form.show()
 
-    graph3d_1 = gl.GLViewWidget()
-    axises = gl.GLAxisItem(QVector3D(pi, pi, pi))
-    graph3d_1.addItem(axises)
-    graph3d_2 = gl.GLViewWidget()
-    graph2d_1 = pg.PlotWidget()
-    graph2d_2 = pg.PlotWidget()
-    graph2d_3 = pg.PlotWidget()
-    graph2d_4 = pg.PlotWidget()
-    graph2d_5 = pg.PlotWidget()
-
-    # making new approximator
-    fa = FunctionApproximator()
-    fa.grid_size = 256
-    M = 16
-
-    # making discrete functions from above
-    k_discrete = np.array(fa.discretize_function_2d(k))
-    f_discrete = np.array(fa.discretize_function_1d(f))
-
-    # computing coefficients
-    k_coeffs = np.array(fa.calculate_fourier_transform_2d_fast(k_discrete))
-    f_coeffs = np.array(fa.calculate_fourier_transform_1d_fast(f_discrete))
-
-    # computing grid to draw this discrete functions
-    x_grid = np.array(fa.get_grid())
-    y_grid = np.array(fa.get_grid())
-
-    # computing g coefficients
-    k = k_coeffs[0:, 0:M-1]
-    f = f_coeffs
-    kt = k.transpose()
-    ktk_1 = inv(kt.dot(k))
-    g_coeffs = ktk_1.dot(kt).dot(f)
-
-    N = fa.grid_size
-
-    # adding zeros
-    zeros = np.zeros(N - M + 1)
-    g_coeffs = np.append(g_coeffs, zeros)
-
-    g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
-
-    # drawing functions and coefficients
-    k_3d_plot = gl.GLSurfacePlotItem(x=x_grid, y=y_grid, z=k_discrete, color=(1, 0, 0, 1), shader='shaded')
-    graph3d_1.addItem(k_3d_plot)
-
-    k_coeff_3d_plot = gl.GLSurfacePlotItem(x=x_grid, y=y_grid, z=k_coeffs, color=(1, 0, 0, 1), shader='shaded')
-    graph3d_2.addItem(k_coeff_3d_plot)
-
-    gp1_1 = graph2d_1.plot()
-    gp1_1.setData(x=x_grid, y=f_discrete)
-
-    graph2d_2.plotItem.plot(f_coeffs, symbol='o')
-
-    gp3 = graph2d_3.plot()
-    gp4 = graph2d_4.plot()
-
-    gp3.setData(x=x_grid, y=g_coeffs)
-    gp4.setData(x=x_grid, y=g_restored)
-
-    # computing restored f from k(x, y) and obtained g(x)
-    f_restored = np.array([0.0 for i in range(x_grid.shape[0])])
-    for i in range(x_grid.shape[0]):
-        f_i = 0
-        for j in range(y_grid.shape[0]):
-            f_i += k_discrete[i, j] * g_restored[j]
-        f_i = f_i * 2.0 / fa.grid_size # TODO: I need to find out why this scaling coefficient is needed
-        f_restored[i] = f_i
-
-    # plot restored f(x)
-    # pg.plot(x_grid, f_restored, title='f(x) restored')
-    # graph2d_1.plotItem.addLine()
-    gp5 = graph2d_5.plot()
-    gp5.setData(x=x_grid, y=f_restored)
-
-    gp1_2 = graph2d_1.plot()
-    gp1_2.setPen((200, 50, 50))
-    gp1_2.setData(x=x_grid, y=f_restored)
-
-
-    # adding plots to tab bar
-    tab_widget = QTabWidget()
-    tab_widget.addTab(graph3d_1, "k(x, y)")
-    tab_widget.addTab(graph3d_2, "k(x, y) coefficients")
-
-    tab_widget.addTab(graph2d_1, "f(x)")
-    tab_widget.addTab(graph2d_2, "f(x) coefficients")
-    tab_widget.addTab(graph2d_3, "g(x) coefficients (restored)")
-    tab_widget.addTab(graph2d_4, "g(x) values (restored)")
-    tab_widget.addTab(graph2d_5, "f(x) restored")
-
-
-    # adding table views
-    table_widget = QTableWidget()
-    table_widget.setRowCount(k_coeffs.shape[0])
-    table_widget.setColumnCount(k_coeffs.shape[1])
-    for r in range(k_coeffs.shape[0]):
-        for c in range(k_coeffs.shape[1]):
-            table_widget.setItem(r, c, QTableWidgetItem("{:15.10f}".format(k_coeffs[r, c])))
-
-    tab_widget.addTab(table_widget, "k(x, y) coefficients table")
-
-    hbox.addWidget(tab_widget)
-    settings_panel.setFixedWidth(250)
-    hbox.addWidget(settings_panel)
-
-    window.show()
     sys.exit(app.exec_())
-
-

@@ -71,10 +71,9 @@ class MultiPlot2d(QWidget):
             self.__legend_model__.appendRow(item)
         self.redraw()
 
-    __plot_data__ = {}
-
-    def __init__(self):
+    def __init__(self, *plots):
         super().__init__()
+        self.__plot_data__ = {}
         self.__plot_widget__ = pg.PlotWidget()
         self.__legend_widget__ = QListView()
 
@@ -83,11 +82,17 @@ class MultiPlot2d(QWidget):
         splitter.setOrientation(Qt.Vertical)
         splitter.addWidget(self.__plot_widget__)
         splitter.addWidget(self.__legend_widget__)
+        self.__legend_widget__.setGeometry(0, 0, 0, 100)
         vbox.addWidget(splitter)
 
         self.__legend_model__ = QStandardItemModel()
         self.__legend_widget__.setModel(self.__legend_model__)
         self.__legend_model__.itemChanged.connect(self.legend_clicked)
+
+        if len(plots) > 0:
+            for plot in plots:
+                self.add_plot(plot)
+            self.refresh()
 
     def legend_clicked(self, item):
         name = item.text()
