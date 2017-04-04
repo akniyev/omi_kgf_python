@@ -79,6 +79,7 @@ class MultiPlot3d(QWidget):
         self.__plot_data__ = {}
         self.__plot_widget__ = gl.GLViewWidget()
         self.__legend_widget__ = QListView()
+        self.__plot_widget__.setBackgroundColor((255, 255, 255))
 
         vbox = QVBoxLayout(self)
         splitter = QSplitter()

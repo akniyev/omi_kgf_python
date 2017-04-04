@@ -18,8 +18,14 @@ class Form(QWidget):
         # Building UI
         params = [
             {'name': 'logN', 'type': 'int', 'value': 5},
-            {'name': 'M', 'type': 'int', 'value': 16}
+            {'name': 'N = ', 'type': 'int', 'readonly': True, 'value': 32},
+            {'name': 'M', 'type': 'int', 'value': 16},
+            {'name': 'M_rect_hor', 'type': 'int', 'value': 16},
+            {'name': 'M_rect_vert', 'type': 'int', 'value': 16},
+            {'name': 'M_triangle', 'type': 'int', 'value': 16},
+            {'name': 'M_corner', 'type': 'int', 'value': 16},
         ]
+
         self.settings_panel = SettingsPanel(params)
         self.tab_widget = QTabWidget()
         hbox = QHBoxLayout()
@@ -50,14 +56,15 @@ class Form(QWidget):
         with open(filename, 'w') as file:
             for row in array_to_print:
                 for item in row:
-                    file.write("\t\t{}".format(item))
+                    #file.write("\t\t{}".format(item))
+                    file.write('{:5.3f} '.format(item))
                 file.write("\n")
 
     @staticmethod
     def k(x, y):
         C = 0.1
-        return 1.0 / (x ** 2 + y ** 2 + C)
-        # return 1.0 / (fabs(sin(x + y)) + 0.1)
+        # return 1.0 / (x ** 2 + y ** 2 + C)
+        return 1.0 / (fabs(sin(x + y)) + 0.1)
         # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
         # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
         # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
@@ -75,7 +82,7 @@ class Form(QWidget):
         kc = kc.copy()
         k = kc[0:, 0:M]
 
-        self.print_2d_array_to_file(k, 'k_1.del')
+        self.print_2d_array_to_file(k, 'k_1_square.del')
 
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
@@ -87,23 +94,23 @@ class Form(QWidget):
             g_coeffs = np.append(g_coeffs, zeros)
         return g_coeffs
 
-    def compute_g_coefficients_2(self, kc, fc, N, M):
+    def compute_g_coefficients_2(self, kc, fc, N, M_hor, M_vert):
         # computing g coefficients
         kc = kc.copy()
-        k = kc[0:, 0:M]
-        for row in range(M, N):
-            for col in range(M):
+        k = kc[0:, 0:M_hor]
+        for row in range(M_vert, N):
+            for col in range(M_hor):
                 k[row, col] = 0
 
-        self.print_2d_array_to_file(k, 'k_2.del')
+        self.print_2d_array_to_file(k, 'k_2_rect.del')
 
         kt = k.transpose()
         ktk_1 = inv(kt.dot(k))
         g_coeffs = ktk_1.dot(kt).dot(fc)
 
         # adding zeros
-        if N - M > 0:
-            zeros = np.zeros(N - M)
+        if N - len(g_coeffs) > 0:
+            zeros = np.zeros(N - len(g_coeffs))
             g_coeffs = np.append(g_coeffs, zeros)
         return g_coeffs
 
@@ -157,7 +164,13 @@ class Form(QWidget):
     def calculate(self):
         logN = self.settings_panel.parameter['logN']
         M = self.settings_panel.parameter['M']
+        M_rect_hor = self.settings_panel.parameter['M_rect_hor']
+        M_rect_ver = self.settings_panel.parameter['M_rect_vert']
+        M_triangle = self.settings_panel.parameter['M_triangle']
+        M_corner = self.settings_panel.parameter['M_corner']
+
         N = 2 ** logN
+        self.settings_panel.parameter['N = '] = N
 
         if M > N:
             return
@@ -182,9 +195,9 @@ class Form(QWidget):
 
         # computing g coefficients
         g_coeffs = self.compute_g_coefficients_1(k_coeffs, f_coeffs, N, M)
-        g_coeffs_2_square = self.compute_g_coefficients_2(k_coeffs, f_coeffs, N, M)
-        g_coeffs_3_triangle = self.compute_g_coefficients_3_triangle(k_coeffs, f_coeffs, N, M)
-        g_coeffs_4_corner = self.compute_g_coefficients_4_corner(k_coeffs, f_coeffs, N, M)
+        g_coeffs_2_square = self.compute_g_coefficients_2(k_coeffs, f_coeffs, N, M_rect_hor, M_rect_ver)
+        g_coeffs_3_triangle = self.compute_g_coefficients_3_triangle(k_coeffs, f_coeffs, N, M_triangle)
+        g_coeffs_4_corner = self.compute_g_coefficients_4_corner(k_coeffs, f_coeffs, N, M_corner)
 
         g_restored = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs))
         g_restored_2_square = np.array(fa.calculate_inverse_fourier_transform_1d_fast(g_coeffs_2_square))

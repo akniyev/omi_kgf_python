@@ -76,6 +76,7 @@ class MultiPlot2d(QWidget):
         self.__plot_data__ = {}
         self.__plot_widget__ = pg.PlotWidget()
         self.__legend_widget__ = QListView()
+        self.__plot_widget__.setBackground((255, 255, 255))
 
         vbox = QVBoxLayout(self)
         splitter = QSplitter()
