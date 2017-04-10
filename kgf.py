@@ -37,7 +37,7 @@ class Form(QWidget):
         self.show()
 
         self.plot_3d_kernel = MultiPlot3d('kernel')
-        self.plot_3d_kernel_coeffs = MultiPlot3d('kernel_coeffs')
+        self.plot_3d_kernel_coeffs = MultiPlot3d('kernel_coeffs', 'kernel_kernel_t')
         self.plot_2d_func_f = MultiPlot2d('f', 'f_restored', 'f_restored_2_square', 'f_restored_3_triangle', 'f_restored_4_corner')
         self.plot2d_coeffs_f = MultiPlot2d('f_coeffs')
         self.plot2d_coeffs_g = MultiPlot2d('g_coeffs', 'g_coeffs_2_square')
@@ -63,8 +63,8 @@ class Form(QWidget):
     @staticmethod
     def k(x, y):
         C = 0.1
-        # return 1.0 / (x ** 2 + y ** 2 + C)
-        return 1.0 / (fabs(sin(x + y)) + 0.1)
+        return 1.0 / (x ** 2 + y ** 2 + C)
+        # return 1.0 / (fabs(sin(x + y)) + 0.1)
         # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
         # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
         # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
@@ -73,7 +73,7 @@ class Form(QWidget):
 
     @staticmethod
     def f(x):
-        return sin(3 * x) / x
+        return fabs(sin(3 * x))
         # return fabs(cos(3 * x))
         # return 1 / (sin(x) + 0.1)
 
@@ -85,7 +85,8 @@ class Form(QWidget):
         self.print_2d_array_to_file(k, 'k_1_square.del')
 
         kt = k.transpose()
-        ktk_1 = inv(kt.dot(k))
+        ktk = kt.dot(k)
+        ktk_1 = inv(ktk)
         g_coeffs = ktk_1.dot(kt).dot(fc)
 
         # adding zeros
@@ -257,6 +258,7 @@ class Form(QWidget):
 
         self.plot_3d_kernel.set_plot_data('kernel', xs=x_grid, ys=y_grid, zs=k_discrete)
         self.plot_3d_kernel_coeffs.set_plot_data('kernel_coeffs', xs=x_grid, ys=y_grid, zs=k_coeffs)
+        self.plot_3d_kernel_coeffs.set_plot_data('kernel_kernel_t', xs=x_grid, ys=y_grid, zs=k_coeffs.transpose().dot(k_coeffs))
         self.plot_2d_func_f.set_plot_data('f', xs=x_grid, ys=f_discrete)
         self.plot_2d_func_f.set_plot_data('f_restored', xs=x_grid, ys=f_restored)
         self.plot_2d_func_f.set_plot_data('f_restored_2_square', xs=x_grid, ys=f_restored_2_square)
