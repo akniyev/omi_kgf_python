@@ -6,65 +6,22 @@ from typing import List
 class Node:
     def __init__(self):
         self.id = None
-        self.input_connections : List[Connection] = []         # [Connection]
-        self.output_connections : List[Connection] = []        # [Connection]
+        self.input_connections : List[InputConnection] = {}             # [name : InputConnection]
+        self.output_connections : List[OutputConnection] = {}           # [name : OutputConnection]
 
-        self.function : Function = None                # Function
-        self.display_function : Function = None        # Function
-        self.import_modules : List[str] = []            # [String], example: ['import numpy as np']
+        self.function : Function = None                                 # Function
+        self.display_function : Function = None                         # Function
+        self.import_modules : List[str] = []                            # [String], example: ['import numpy as np']
 
-    def __init__(self, input_connection_names : List[str], output_connection_names : List[str]):
-        self.__init__()
+    def connect(self, out_connection_name : str, node, in_connection_name : str):
+        node: Node = node  # for IDE hints
+        out_connection = self.output_connections[out_connection_name]
+        in_connection = node.input_connections[in_connection_name]
 
-        self.input_connections = Connection.generate_connection_list(input_connection_names)
-        self.output_connections = Connection.generate_connection_list(output_connection_names)
+        if (out_connection is not None) and (in_connection is not None) and out_connection.target_connection is None and in_connection.input_connection is None:
 
-    def clear_input_connections(self):
-        self.input_connections = []
 
-    @staticmethod
-    def find_connection(connections, connection_name):
-        for i in range(len(connections)):
-            if connections[i].name == connection_name:
-                return connections[i]
-        return False
 
-    @staticmethod
-    def delete_connection(self, connections : List[Connection], connection_name : str):
-        c = self.find_connection(connections, connection_name)
-        if c:
-            connections.remove(c)
-
-    def delete_input_connection(self, connection_name : str):
-        self.delete_connection(self.input_connections, connection_name)
-
-    def delete_output_connection(self, connection_name : str):
-        self.delete_connection(self.output_connections, connection_name)
-
-    @staticmethod
-    def add_connection(self, connections : List[Connection], connection_name : str):
-        c = self.find_connection(connections, connection_name)
-        if not c:
-            c = Connection()
-            c.name = connection_name
-            connections.append(c)
-        else:
-            print('Connection with this name already exists!')
-
-    def add_input_connection(self, connection_name : str):
-        self.add_connection(self.input_connections, connection_name)
-
-    def add_output_connections(self, connection_name):
-        self.add_connection(self.output_connections, connection_name)
-
-    def connection_exists(self, connections : List[Connection], connection_name : str):
-        return not self.find_connection(connections, connection_name)
-
-    def input_connection_exists(self, connection_name : str):
-        return self.connection_exists(self.input_connections, connection_name)
-
-    def output_connection_exists(self, connection_name : str):
-        return self.connection_exists(self.output_connections, connection_name)
 
 
 class Function(ABC):
@@ -73,22 +30,20 @@ class Function(ABC):
         pass
 
 
-class Connection:
+class InputConnection:
+    def __init__(self):
+        self.name = None
+        self.input_node = None
+        self.input_connection = None
+
+
+class OutputConnection:
     def __init__(self):
         self.name = None
         self.value = None
-        self.target_node = None
+        self.target_nodes = []
         self.target_connection = None
 
-    @staticmethod
-    def generate_connection_list(names : List[str]):
-        result = []
-        for name in names:
-            connection = Connection()
-            connection.name = name
-            result.append(connection)
-
-        return result
 
 
 class Coordinate:
@@ -96,28 +51,9 @@ class Coordinate:
     y = 0
 
 
-class Plot:
-    def __init__(self):
-        self.nodes = {}
-        self._id = 0
 
-    def next_id(self):
-        self._id += 1
-        return self._id
-
-    def add_node(self, node: Node):
-        node_id = self.next_id()
-        node.id = node_id
-        self.nodes[node_id] = node
-
-    def remove_node_by_id(self, node_id):
-        del self.nodes[node_id]
-
-    def connect_nodes(self, ):
-
-
-
-
+if __name__ == "__main__":
+    print("HELLO!")
 
 
 
