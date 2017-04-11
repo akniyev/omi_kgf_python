@@ -1,5 +1,10 @@
 import textwrap
 from abc import ABC, abstractmethod
+
+import sys
+
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent
+from PyQt5.QtWidgets import *
 from typing import List, Set, Dict
 
 
@@ -192,6 +197,23 @@ class SimpleFunction(Function):
         return True
 
 
+class NodeWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.title = "title"
+        self.inputs: List[str] = []
+        self.output: List[str] = []
+
+    def paintEvent(self, event : QPaintEvent):
+        qp = QPainter()
+        qp.begin(self)
+        qp.drawLine(0, 0, self.width(), self.height())
+        qp.end()
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        print("({}, {})".format(event.x(), event.y()))
+
+
 if __name__ == "__main__":
     n1 = Node()
     n2 = Node()
@@ -227,4 +249,9 @@ def compute_values(values):
     #     def compute_values(values):
     #         pass
 
-    print("HELLO!")
+    app = QApplication(sys.argv)
+
+    node_widget = NodeWidget()
+    node_widget.show()
+
+    sys.exit(app.exec_())
