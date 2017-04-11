@@ -1,13 +1,9 @@
+import textwrap
 from abc import ABC, abstractmethod
 from typing import List, Set, Dict
 
 
 # Model
-class Function:
-    def compute(self, input_connections, output_connections):
-        pass
-
-
 class NodeArgument:
     def __init__(self):
         self.name: str = None
@@ -21,6 +17,43 @@ class NodeResult:
         self.node: Node = None
         self.value = None
         self.targets: Set[NodeArgument] = set()
+
+
+class Function:
+    # CLASS:
+    # @staticmethod
+    # class NodeFunction:
+    #     def compute_values(self, values):
+    #         pass
+
+    def __init__(self):
+        self.counter = 0
+        self.function_name = ""
+        self.function_body = ""
+
+    def get_next_counter(self):
+        self.counter += 1
+        return self.counter
+
+    def compute(self, arguments: List[NodeArgument], results: List[NodeResult]):
+        num = self.get_next_counter()
+        fun_name = "Node{}{}".format(self.function_name, num)
+        body = textwrap.indent(self.function_body, "  ")
+        body = "class {}:\n".format(fun_name) + body
+        values = {}
+        for argument in arguments:
+            values[argument.name] = argument.in_value.value
+        f_call = "{}.compute_values(values)".format(fun_name)
+        exec(body)
+        computed_result = eval(f_call)
+        for node_result in results:
+            if node_result.name not in computed_result:
+                return False
+
+        for node_result in results:
+            node_result.value = computed_result[node_result.name]
+
+        return True
 
 
 class Node:
@@ -100,6 +133,15 @@ class Node:
             if self.get_result(name) is None:
                 self.add_result(name)
 
+    def compute(self):
+        for argument in self.arguments.values():
+            if argument.in_value.value is None:
+                return False
+        if self.function is None:
+            return False
+        self.function.compute(list(self.arguments.values()), list(self.results.values()))
+        return True
+
     @staticmethod
     def connect(result: NodeResult, argument: NodeArgument):
         if argument.in_value is None:
@@ -125,5 +167,35 @@ if __name__ == "__main__":
     # Node.disconnect(n1.get_result('a'), n2.get_argument('x'))
     n1.set_results('a', 'b', 'c')
     n2.set_arguments('x', 'z')
+    n3 = Node()
+    n3.set_results('a')
+
+    f1 = Function()
+    f1.function_name = "Function"
+    f1.function_body = """@staticmethod
+def compute_values(values):
+    return {'a': 2}
+"""
+
+    n3.function = f1
+
+    n4 = Node()
+    n4.set_arguments('x')
+    n4.set_results('b')
+    f2 = Function()
+    f2.function_name = "Square"
+    f2.function_body = """@staticmethod
+def compute_values(values):
+    x = values['x']
+    return { 'b' : x * x }
+"""
+    n4.function = f2
+    Node.connect(n3.get_result('a'), n4.get_argument('x'))
+    n3.compute()
+    n4.compute()
+    # @staticmethod
+    # class NodeFunction:
+    #     def compute_values(values):
+    #         pass
 
     print("HELLO!")
