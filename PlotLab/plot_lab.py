@@ -66,6 +66,14 @@ class Node:
         self.display_function: Function = None  # Function
         self.import_modules: List[str] = []  # [String], example: ['import numpy as np']
 
+    def can_compute(self):
+        for arg in self.arguments.values():
+            if arg.in_value.value is None:
+                return False
+        if self.function is None:
+            return False
+        return True
+
     def get_argument(self, name: str):
         if name in self.arguments.keys():
             return self.arguments[name]
@@ -134,11 +142,9 @@ class Node:
                 self.add_result(name)
 
     def compute(self):
-        for argument in self.arguments.values():
-            if argument.in_value.value is None:
-                return False
-        if self.function is None:
+        if not self.can_compute():
             return False
+
         self.function.compute(list(self.arguments.values()), list(self.results.values()))
         return True
 
@@ -156,6 +162,36 @@ class Node:
                 result.targets.remove(argument)
 
 
+class ConstantFunction(Function):
+    def __init__(self, value, name: str):
+        super().__init__()
+        self.function_body = ("@staticmethod\n"
+                              "def compute_values(values):\n"
+                              "  return {'a': 2}")
+        self.function_name = name
+
+
+class SimpleFunction(Function):
+    def __init__(self, expressions: Dict[str, str], name: str): # SimpleFunction({'b': 'x * x * x'}, "Simplefunction")
+        super().__init__()
+        self.function_name = name
+        self.function_body = expressions
+
+    def compute(self, arguments: List[NodeArgument], results: List[NodeResult]):
+        values = {}
+        expressions: Dict[str, str] = self.function_body
+        for argument in arguments:
+            values[argument.name] = argument.in_value.value
+        computed_result = {}
+        for arg_name in expressions.keys():
+            arg_value = eval(expressions[arg_name], values)
+            computed_result[arg_name] = arg_value
+        for node_result in results:
+            node_result.value = computed_result[node_result.name]
+
+        return True
+
+
 if __name__ == "__main__":
     n1 = Node()
     n2 = Node()
@@ -170,14 +206,7 @@ if __name__ == "__main__":
     n3 = Node()
     n3.set_results('a')
 
-    f1 = Function()
-    f1.function_name = "Function"
-    f1.function_body = """@staticmethod
-def compute_values(values):
-    return {'a': 2}
-"""
-
-    n3.function = f1
+    n3.function = ConstantFunction(2, "Constant2")
 
     n4 = Node()
     n4.set_arguments('x')
@@ -189,7 +218,7 @@ def compute_values(values):
     x = values['x']
     return { 'b' : x * x }
 """
-    n4.function = f2
+    n4.function = SimpleFunction({'b': 'x * x * x'}, "Simplefunction")
     Node.connect(n3.get_result('a'), n4.get_argument('x'))
     n3.compute()
     n4.compute()
