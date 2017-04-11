@@ -1,27 +1,38 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Set, Dict
 
 
 # Model
 class Node:
     def __init__(self):
-        self.id = None
-        self.input_connections : List[InputConnection] = {}             # [name : InputConnection]
-        self.output_connections : List[OutputConnection] = {}           # [name : OutputConnection]
+        self.id: int = None
+        self.arguments: Dict[NodeArgument] = {}  # {name : InputConnection}
+        self.results: Dict[NodeResult] = {}  # {name : OutputConnection}
 
-        self.function : Function = None                                 # Function
-        self.display_function : Function = None                         # Function
-        self.import_modules : List[str] = []                            # [String], example: ['import numpy as np']
+        self.function: Function = None  # Function
+        self.display_function: Function = None  # Function
+        self.import_modules: List[str] = []  # [String], example: ['import numpy as np']
 
-    def connect(self, out_connection_name : str, node, in_connection_name : str):
-        node: Node = node  # for IDE hints
-        out_connection = self.output_connections[out_connection_name]
-        in_connection = node.input_connections[in_connection_name]
+    def get_argument(self, name: str):
+        return self.arguments[name]
 
-        if (out_connection is not None) and (in_connection is not None) and out_connection.target_connection is None and in_connection.input_connection is None:
+    def get_result(self, name: str):
+        return self.results[name]
 
+    def add_argument(self, name):
+        if
 
+    @staticmethod
+    def connect(result: NodeResult, argument: NodeArgument):
+        if argument.in_value is None:
+            argument.in_value = result
+            result.targets.add(argument)
 
+    @staticmethod
+    def disconnect(result: NodeResult, argument: NodeArgument):
+        if argument.in_value == result and argument in result.targets:
+            argument.in_value = None
+            result.targets.remove(argument)
 
 
 class Function(ABC):
@@ -30,31 +41,20 @@ class Function(ABC):
         pass
 
 
-class InputConnection:
+class NodeArgument:
     def __init__(self):
-        self.name = None
-        self.input_node = None
-        self.input_connection = None
+        self.name: str = None
+        self.node: Node = None
+        self.in_value: NodeResult = None
 
 
-class OutputConnection:
+class NodeResult:
     def __init__(self):
-        self.name = None
+        self.name: str = None
+        self.node: Node = None
         self.value = None
-        self.target_nodes = []
-        self.target_connection = None
-
-
-
-class Coordinate:
-    x = 0
-    y = 0
-
+        self.targets: Set[NodeArgument] = {}
 
 
 if __name__ == "__main__":
     print("HELLO!")
-
-
-
-
