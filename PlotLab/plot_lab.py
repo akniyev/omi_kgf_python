@@ -3,8 +3,7 @@ from typing import List, Set, Dict
 
 
 # Model
-class Function(ABC):
-    @abstractmethod
+class Function:
     def compute(self, input_connections, output_connections):
         pass
 
