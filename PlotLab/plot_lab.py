@@ -226,6 +226,9 @@ class NodeInfo:
         self.background_color_selected = QColor(200, 200, 250)
         self.background_color_hover = QColor(230, 230, 230)
 
+        self.handler_radius = 5
+        self.text_height = 10
+
     def get_background_color(self):
         if self.state == self.State.normal:
             return self.background_color
@@ -259,6 +262,22 @@ class NodeInfo:
     def point_over_node(self, x, y):
         rect = self.get_node_rect()
         return rect.contains(x, y)
+
+    def get_handle_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
+        dist_from_edge = 5
+        center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
+        center_x = self.center.x() + position * (self.width / 2 + dist_from_edge)
+
+        radius = self.handler_radius
+        return QRect(center_x - radius, center_y - radius, radius * 2, radius * 2)
+
+    def get_handle_text_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
+        dist_from_edge = 10
+        center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
+        radius = self.text_height
+        center_x = self.center.x() + self.width / 2 - radius if position == 1 else self.center.x() - self.width / 2
+
+        return QRect(center_x - radius, center_y - radius, radius * 2, radius * 2)
 
 
 class DiagramWidget(QWidget):
@@ -294,6 +313,20 @@ class DiagramWidget(QWidget):
         qp.setBrush(brush)
         qp.fillRect(node_rect, brush)
         qp.drawRect(node_rect)
+
+        n_arg = len(node_info.node.arguments)
+        for i in range(n_arg):
+            rect = node_info.get_handle_rect(i, n_arg, -1)
+            text_rect = node_info.get_handle_text_rect(i, n_arg, -1)
+            qp.drawEllipse(rect)
+            qp.drawText(text_rect, node_info.text_height, "x")
+
+        n_res = len(node_info.node.results)
+        for i in range(n_res):
+            rect = node_info.get_handle_rect(i, n_res, 1)
+            text_rect = node_info.get_handle_text_rect(i, n_res, 1)
+            qp.drawEllipse(rect)
+            qp.drawText(text_rect, node_info.text_height, "a")
 
     def draw_nodes(self, qp: QPainter):
         if self.selected_id != -1:
@@ -332,23 +365,26 @@ class DiagramWidget(QWidget):
         self.repaint()
 
     def mousePressEvent(self, event: QMouseEvent):
-        ni = self.node_under_cursor(event.x(), event.y())
-        if ni is not None:
-            self.dragging = (event.x(), event.y(), ni.center, ni)
+        if event.button() == 1:
+            ni = self.node_under_cursor(event.x(), event.y())
+            if ni is not None:
+                self.dragging = (event.x(), event.y(), ni.center, ni)
+        else:
+            ni = self.node_under_cursor(event.x(), event.y())
+            self.selected_id = -1
+            ns = self.nodes
+            for i in range(len(self.nodes)):
+                if ni == ns[i]:
+                    self.selected_id = i
+                    break
+        self.repaint()
 
-    def mouseReleaseEvent(self, QMouseEvent):
+    def mouseReleaseEvent(self, event: QMouseEvent):
         self.dragging = None
         self.repaint()
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        ni = self.node_under_cursor(event.x(), event.y())
-        self.selected_id = -1
-        ns = self.nodes
-        for i in range(len(self.nodes)):
-            if ni == ns[i]:
-                self.selected_id = i
-                break
-        self.repaint()
+        pass
 
 
 if __name__ == "__main__":
