@@ -226,6 +226,7 @@ class NodeInfo:
         self.background_color_selected = QColor(200, 200, 250)
         self.background_color_hover = QColor(230, 230, 230)
 
+        self.hovered_handler = -1
         self.handler_radius = 5
         self.text_height = 10
 
@@ -263,21 +264,35 @@ class NodeInfo:
         rect = self.get_node_rect()
         return rect.contains(x, y)
 
-    def get_handle_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
+    def get_handle_center(self, i, n, position):
         dist_from_edge = 5
         center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
         center_x = self.center.x() + position * (self.width / 2 + dist_from_edge)
+        return QPoint(center_x, center_y)
 
+    def get_handle_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
+        center = self.get_handle_center(i, n, position)
         radius = self.handler_radius
-        return QRect(center_x - radius, center_y - radius, radius * 2, radius * 2)
+        return QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
 
     def get_handle_text_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
-        dist_from_edge = 10
         center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
         radius = self.text_height
         center_x = self.center.x() + self.width / 2 - radius if position == 1 else self.center.x() - self.width / 2
 
         return QRect(center_x - radius, center_y - radius, radius * 2, radius * 2)
+
+    def point_over_handle(self, x, y):
+        n = len(self.node.arguments)
+        for i in range(n):
+            if self.get_handle_rect(i, n, -1).contains(QPoint(x, y)):
+                return 0, i, self
+
+        n = len(self.node.results)
+        for i in range(n):
+            if self.get_handle_rect(i, n, 1).contains(QPoint(x, y)):
+                return 1, i, self
+        return None
 
 
 class DiagramWidget(QWidget):
@@ -309,6 +324,9 @@ class DiagramWidget(QWidget):
         brush.setColor(background_color)
         brush.setStyle(1)
 
+        old_pen = qp.pen()
+        old_brush = qp.brush()
+
         qp.setPen(pen)
         qp.setBrush(brush)
         qp.fillRect(node_rect, brush)
@@ -318,6 +336,12 @@ class DiagramWidget(QWidget):
         for i in range(n_arg):
             rect = node_info.get_handle_rect(i, n_arg, -1)
             text_rect = node_info.get_handle_text_rect(i, n_arg, -1)
+            pen = QPen(QColor(0, 0, 0))
+            brush = QBrush(QColor(255, 255, 255), 1)
+            if node_info.hovered_handler is not None:
+                pass
+            qp.setPen(pen)
+            qp.setBrush(brush)
             qp.drawEllipse(rect)
             qp.drawText(text_rect, node_info.text_height, "x")
 
@@ -348,6 +372,12 @@ class DiagramWidget(QWidget):
                 result = ni
         return result
 
+    def handler_under_cursor(self, x, y):
+        handler_id = None
+        for ni in self.nodes:
+            handler_id = ni.point_over_handle(x, y)
+        return handler_id
+
     def mouseMoveEvent(self, event: QMouseEvent):
         self.setWindowTitle("({}, {})".format(event.x(), event.y()))
         if self.dragging is None:
@@ -356,6 +386,10 @@ class DiagramWidget(QWidget):
             ni = self.node_under_cursor(event.x(), event.y())
             if ni is not None:
                 ni.state = NodeInfo.State.hover
+            handler_id = self.handler_under_cursor(event.x(), event.y())
+            print(handler_id)
+            #ni: NodeInfo = handler_id[2]
+            #ni.hovered_handler = handler_id
         else:
             delta_x = event.x() - self.dragging[0]
             delta_y = event.y() - self.dragging[1]
