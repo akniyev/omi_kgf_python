@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 import sys
 
 from PyQt5.QtCore import QPoint, QRect
-from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush, QKeyEvent
 from PyQt5.QtWidgets import *
 from typing import List, Set, Dict, Tuple
 
@@ -543,6 +543,10 @@ class DiagramWidget(QWidget):
                             print("Line drawn!")
         self.dragging = None
         self.repaint()
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == 16777223:  # Delete key code = 32
+            print("Delete pressed")
 
 
 if __name__ == "__main__":
