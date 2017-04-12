@@ -10,7 +10,12 @@ import sys
 from PyQt5.QtCore import QPoint, QRect
 from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush
 from PyQt5.QtWidgets import *
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Tuple
+
+from numpy import arccos, array, dot, pi
+from numpy.linalg import det, norm
+
+import math
 
 
 # Model
@@ -321,6 +326,39 @@ class DiagramWidget(QWidget):
                 return
         self.lines.append((i1, node_info1, i2, node_info2))
 
+    def lineMagnitude(self, x1, y1, x2, y2):
+        lineMagnitude = math.sqrt(math.pow((x2 - x1), 2) + math.pow((y2 - y1), 2))
+        return lineMagnitude
+
+    # Calc minimum distance from a point and a line segment (i.e. consecutive vertices in a polyline).
+    def DistancePointLine(self, px, py, x1, y1, x2, y2):
+        # http://local.wasp.uwa.edu.au/~pbourke/geometry/pointline/source.vba
+        LineMag = self.lineMagnitude(x1, y1, x2, y2)
+
+        if LineMag < 0.00000001:
+            DistancePointLine = 9999
+            return DistancePointLine
+
+        u1 = (((px - x1) * (x2 - x1)) + ((py - y1) * (y2 - y1)))
+        u = u1 / (LineMag * LineMag)
+
+        if (u < 0.00001) or (u > 1):
+            # // closest point does not fall within the line segment, take the shorter distance
+            # // to an endpoint
+            ix = self.lineMagnitude(px, py, x1, y1)
+            iy = self.lineMagnitude(px, py, x2, y2)
+            if ix > iy:
+                DistancePointLine = iy
+            else:
+                DistancePointLine = ix
+        else:
+            # Intersecting point is on the line, use the formula
+            ix = x1 + u * (x2 - x1)
+            iy = y1 + u * (y2 - y1)
+            DistancePointLine = self.lineMagnitude(px, py, ix, iy)
+
+        return DistancePointLine
+
     def draw_node(self, qp: QPainter, node_info: NodeInfo):
         background_color = node_info.get_background_color()
         border_color = node_info.get_border_color()
@@ -392,14 +430,7 @@ class DiagramWidget(QWidget):
 
     def draw_lines(self, qp: QPainter):
         for line in self.lines:
-            i1 = line[0]
-            ni1: NodeInfo = line[1]
-            i2 = line[2]
-            ni2: NodeInfo = line[3]
-            n1 = len(ni1.node.results)
-            n2 = len(ni2.node.arguments)
-            c1 = ni1.get_handle_center(i1, n1, 1)
-            c2 = ni2.get_handle_center(i2, n2, -1)
+            (c1, c2) = self.get_line_coordinates(line)
             qp.drawLine(c1, c2)
 
     def draw_temporal_line(self, qp: QPainter):
@@ -413,6 +444,27 @@ class DiagramWidget(QWidget):
                     n = len(ni.node.arguments if position < 0 else ni.node.results)
                     c = ni.get_handle_center(i, n, position)
                     qp.drawLine(c.x(), c.y(), self.drag_coordinates[0], self.drag_coordinates[1])
+
+    def get_line_coordinates(self, line) -> Tuple[QPoint, QPoint]:
+        i1 = line[0]
+        ni1: NodeInfo = line[1]
+        i2 = line[2]
+        ni2: NodeInfo = line[3]
+        n1 = len(ni1.node.results)
+        n2 = len(ni2.node.arguments)
+        c1 = ni1.get_handle_center(i1, n1, 1)
+        c2 = ni2.get_handle_center(i2, n2, -1)
+        return (c1, c2)
+
+    def line_under_cursor(self, x, y):
+        selected_line_index = None
+        for i in range(len(self.lines)):
+            (c1, c2) = self.get_line_coordinates(self.lines[i])
+            tol = 2
+            if self.DistancePointLine(x, y, c1.x(), c1.y(), c2.x(), c2.y()) < tol:
+                selected_line_index = i
+        return selected_line_index
+
 
     def paintEvent(self, event: QPaintEvent):
         qp = QPainter()
@@ -458,13 +510,15 @@ class DiagramWidget(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == 1:
             ni = self.node_under_cursor(event.x(), event.y())
+
             if ni is not None:
                 self.dragging = ("drag", event.x(), event.y(), ni.center, ni)
             elif self.selected_handler_id is not None:
                 if self.selected_handler_id[0] == 1:
                     self.dragging = ("line", self.selected_handler_id)
                     self.drag_coordinates = (event.x(), event.y())
-        else:
+        elif event.button() == 2:
+            selected_line = self.line_under_cursor(event.x(), event.y())
             ni = self.node_under_cursor(event.x(), event.y())
             self.selected_id = -1
             ns = self.nodes
@@ -472,6 +526,8 @@ class DiagramWidget(QWidget):
                 if ni == ns[i]:
                     self.selected_id = i
                     break
+            if ni is None and selected_line is not None:
+                del self.lines[selected_line]
         self.repaint()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
