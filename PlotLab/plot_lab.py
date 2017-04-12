@@ -1,9 +1,14 @@
 import textwrap
+from enum import Enum
+from random import randint
+
+from PyQt5 import Qt
 from abc import ABC, abstractmethod
 
 import sys
 
-from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent
+from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush
 from PyQt5.QtWidgets import *
 from typing import List, Set, Dict
 
@@ -197,21 +202,153 @@ class SimpleFunction(Function):
         return True
 
 
-class NodeWidget(QWidget):
+class NodeInfo:
+    class State(Enum):
+        normal = 0
+        selected = 1
+        hover = 2
+
     def __init__(self):
         super().__init__()
-        self.title = "title"
-        self.inputs: List[str] = []
-        self.output: List[str] = []
+        self.node: Node = None
+        self.center: QPoint = QPoint(0, 0)
+        self.width = 100
+        self.height = 100
+        self.state = self.State.normal
+
+        self.border_color = QColor(0, 0, 0)
+        self.border_color_selected = QColor(255, 201, 14)
+        self.border_color_hover = QColor(255, 237, 174)
+        self.border_width = 1
+        self.border_width_hover = 3
+        self.border_width_selected = 3
+        self.background_color = QColor(200, 200, 200)
+        self.background_color_selected = QColor(200, 200, 250)
+        self.background_color_hover = QColor(230, 230, 230)
+
+    def get_background_color(self):
+        if self.state == self.State.normal:
+            return self.background_color
+        elif self.state == self.State.hover:
+            return self.background_color_hover
+        else:
+            return self.background_color_selected
+
+    def get_border_color(self):
+        if self.state == self.State.normal:
+            return self.border_color
+        elif self.state == self.State.hover:
+            return self.border_color_hover
+        else:
+            return self.border_color_selected
+
+    def get_border_width(self):
+        if self.state == self.State.normal:
+            return self.border_width
+        elif self.state == self.State.hover:
+            return self.border_width_hover
+        else:
+            return self.border_width_selected
+
+    def get_node_rect(self) -> QRect:
+        c = self.center
+        w = self.width
+        h = self.height
+        return QRect(c.x() - w / 2, c.y() - h / 2, w, h)
+
+    def point_over_node(self, x, y):
+        rect = self.get_node_rect()
+        return rect.contains(x, y)
+
+
+class DiagramWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.nodes: List[NodeInfo] = []
+        self.setMouseTracking(True)
+        self.selected_id = -1
+        self.dragging = None
+        for i in range(10):
+            n = Node()
+            n.set_arguments('x', 'y', 'z')
+            n.set_results('a', 'b')
+            ni = NodeInfo()
+            ni.node = n
+            ni.center = QPoint(randint(0, self.width()), randint(0, self.height()))
+
+            self.nodes.append(ni)
+
+    @staticmethod
+    def draw_node(qp: QPainter, node_info: NodeInfo):
+        background_color = node_info.get_background_color()
+        border_color = node_info.get_border_color()
+        border_width = node_info.get_border_width()
+        node_rect = node_info.get_node_rect()
+        pen = QPen(border_color)
+        pen.setWidth(border_width)
+        brush = QBrush()
+        brush.setColor(background_color)
+        brush.setStyle(1)
+
+        qp.setPen(pen)
+        qp.setBrush(brush)
+        qp.fillRect(node_rect, brush)
+        qp.drawRect(node_rect)
+
+    def draw_nodes(self, qp: QPainter):
+        if self.selected_id != -1:
+            self.nodes[self.selected_id].state = NodeInfo.State.selected
+        for ni in self.nodes:
+            self.draw_node(qp, ni)
 
     def paintEvent(self, event : QPaintEvent):
         qp = QPainter()
+
         qp.begin(self)
-        qp.drawLine(0, 0, self.width(), self.height())
+        self.draw_nodes(qp)
         qp.end()
 
+    def node_under_cursor(self, x, y):
+        result = None
+        for ni in self.nodes:
+            if ni.point_over_node(x, y):
+                result = ni
+        return result
+
     def mouseMoveEvent(self, event: QMouseEvent):
-        print("({}, {})".format(event.x(), event.y()))
+        self.setWindowTitle("({}, {})".format(event.x(), event.y()))
+        if self.dragging is None:
+            for ni in self.nodes:
+                ni.state = NodeInfo.State.normal
+            ni = self.node_under_cursor(event.x(), event.y())
+            if ni is not None:
+                ni.state = NodeInfo.State.hover
+        else:
+            delta_x = event.x() - self.dragging[0]
+            delta_y = event.y() - self.dragging[1]
+            ni: NodeInfo = self.dragging[3]
+            old_center: QPoint = self.dragging[2]
+            ni.center = QPoint(old_center.x() + delta_x, old_center.y() + delta_y)
+        self.repaint()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        ni = self.node_under_cursor(event.x(), event.y())
+        if ni is not None:
+            self.dragging = (event.x(), event.y(), ni.center, ni)
+
+    def mouseReleaseEvent(self, QMouseEvent):
+        self.dragging = None
+        self.repaint()
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        ni = self.node_under_cursor(event.x(), event.y())
+        self.selected_id = -1
+        ns = self.nodes
+        for i in range(len(self.nodes)):
+            if ni == ns[i]:
+                self.selected_id = i
+                break
+        self.repaint()
 
 
 if __name__ == "__main__":
@@ -251,7 +388,7 @@ def compute_values(values):
 
     app = QApplication(sys.argv)
 
-    node_widget = NodeWidget()
+    node_widget = DiagramWidget()
     node_widget.show()
 
     sys.exit(app.exec_())
