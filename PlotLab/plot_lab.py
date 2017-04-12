@@ -226,7 +226,6 @@ class NodeInfo:
         self.background_color_selected = QColor(200, 200, 250)
         self.background_color_hover = QColor(230, 230, 230)
 
-        self.hovered_handler = -1
         self.handler_radius = 5
         self.text_height = 10
 
@@ -301,7 +300,11 @@ class DiagramWidget(QWidget):
         self.nodes: List[NodeInfo] = []
         self.setMouseTracking(True)
         self.selected_id = -1
+        self.selected_handler_id = None
         self.dragging = None
+        self.drag_coordinates = None
+        self.lines = []  # (i1, node_info1, i2, node_info2)
+
         for i in range(10):
             n = Node()
             n.set_arguments('x', 'y', 'z')
@@ -312,8 +315,13 @@ class DiagramWidget(QWidget):
 
             self.nodes.append(ni)
 
-    @staticmethod
-    def draw_node(qp: QPainter, node_info: NodeInfo):
+    def add_line(self, i1: int, node_info1: NodeInfo, i2: int, node_info2: NodeInfo):
+        for line in self.lines:
+            if line[2] == i2 and line[3] == node_info2:
+                return
+        self.lines.append((i1, node_info1, i2, node_info2))
+
+    def draw_node(self, qp: QPainter, node_info: NodeInfo):
         background_color = node_info.get_background_color()
         border_color = node_info.get_border_color()
         border_width = node_info.get_border_width()
@@ -338,17 +346,39 @@ class DiagramWidget(QWidget):
             text_rect = node_info.get_handle_text_rect(i, n_arg, -1)
             pen = QPen(QColor(0, 0, 0))
             brush = QBrush(QColor(255, 255, 255), 1)
-            if node_info.hovered_handler is not None:
-                pass
+
+            if self.selected_handler_id is not None:
+                if self.selected_handler_id[0] == 0:
+                    handler_node = self.selected_handler_id[2]
+                    if handler_node == node_info:
+                        if self.selected_handler_id[1] == i:
+                            pen.setWidth(node_info.border_width_selected)
+
             qp.setPen(pen)
             qp.setBrush(brush)
+
             qp.drawEllipse(rect)
             qp.drawText(text_rect, node_info.text_height, "x")
 
+        pen = old_pen
         n_res = len(node_info.node.results)
         for i in range(n_res):
             rect = node_info.get_handle_rect(i, n_res, 1)
             text_rect = node_info.get_handle_text_rect(i, n_res, 1)
+
+            pen = QPen(QColor(0, 0, 0))
+            brush = QBrush(QColor(255, 255, 255), 1)
+
+            if self.selected_handler_id is not None:
+                if self.selected_handler_id[0] == 1:
+                    handler_node = self.selected_handler_id[2]
+                    if handler_node == node_info:
+                        if self.selected_handler_id[1] == i:
+                            pen.setWidth(node_info.border_width_selected)
+
+            qp.setPen(pen)
+            qp.setBrush(brush)
+
             qp.drawEllipse(rect)
             qp.drawText(text_rect, node_info.text_height, "a")
 
@@ -357,10 +387,35 @@ class DiagramWidget(QWidget):
             self.nodes[self.selected_id].state = NodeInfo.State.selected
         for ni in self.nodes:
             self.draw_node(qp, ni)
+        self.draw_temporal_line(qp)
+        self.draw_lines(qp)
 
-    def paintEvent(self, event : QPaintEvent):
+    def draw_lines(self, qp: QPainter):
+        for line in self.lines:
+            i1 = line[0]
+            ni1: NodeInfo = line[1]
+            i2 = line[2]
+            ni2: NodeInfo = line[3]
+            n1 = len(ni1.node.results)
+            n2 = len(ni2.node.arguments)
+            c1 = ni1.get_handle_center(i1, n1, 1)
+            c2 = ni2.get_handle_center(i2, n2, -1)
+            qp.drawLine(c1, c2)
+
+    def draw_temporal_line(self, qp: QPainter):
+        if self.dragging is not None:
+            if self.dragging[0] == "line":
+                if self.drag_coordinates is not None:
+                    d = self.dragging[1]
+                    position = d[0] * 2 - 1
+                    i = d[1]
+                    ni: NodeInfo = d[2]
+                    n = len(ni.node.arguments if position < 0 else ni.node.results)
+                    c = ni.get_handle_center(i, n, position)
+                    qp.drawLine(c.x(), c.y(), self.drag_coordinates[0], self.drag_coordinates[1])
+
+    def paintEvent(self, event: QPaintEvent):
         qp = QPainter()
-
         qp.begin(self)
         self.draw_nodes(qp)
         qp.end()
@@ -376,7 +431,9 @@ class DiagramWidget(QWidget):
         handler_id = None
         for ni in self.nodes:
             handler_id = ni.point_over_handle(x, y)
-        return handler_id
+            if handler_id is not None:
+                return handler_id
+        return None
 
     def mouseMoveEvent(self, event: QMouseEvent):
         self.setWindowTitle("({}, {})".format(event.x(), event.y()))
@@ -387,22 +444,26 @@ class DiagramWidget(QWidget):
             if ni is not None:
                 ni.state = NodeInfo.State.hover
             handler_id = self.handler_under_cursor(event.x(), event.y())
-            print(handler_id)
-            #ni: NodeInfo = handler_id[2]
-            #ni.hovered_handler = handler_id
-        else:
-            delta_x = event.x() - self.dragging[0]
-            delta_y = event.y() - self.dragging[1]
-            ni: NodeInfo = self.dragging[3]
-            old_center: QPoint = self.dragging[2]
+            self.selected_handler_id = handler_id
+        elif self.dragging[0] == "drag":
+            delta_x = event.x() - self.dragging[1]
+            delta_y = event.y() - self.dragging[2]
+            ni: NodeInfo = self.dragging[4]
+            old_center: QPoint = self.dragging[3]
             ni.center = QPoint(old_center.x() + delta_x, old_center.y() + delta_y)
+        elif self.dragging[0] == "line":
+            self.drag_coordinates = (event.x(), event.y())
         self.repaint()
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == 1:
             ni = self.node_under_cursor(event.x(), event.y())
             if ni is not None:
-                self.dragging = (event.x(), event.y(), ni.center, ni)
+                self.dragging = ("drag", event.x(), event.y(), ni.center, ni)
+            elif self.selected_handler_id is not None:
+                if self.selected_handler_id[0] == 1:
+                    self.dragging = ("line", self.selected_handler_id)
+                    self.drag_coordinates = (event.x(), event.y())
         else:
             ni = self.node_under_cursor(event.x(), event.y())
             self.selected_id = -1
@@ -414,11 +475,18 @@ class DiagramWidget(QWidget):
         self.repaint()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.dragging is not None and self.dragging[0] == "line":
+            release_handler = self.handler_under_cursor(event.x(), event.y())
+            if release_handler is not None:
+                if self.selected_handler_id is not None:
+                    if release_handler[0] == 0:
+                        if release_handler[2] != self.dragging[1][2]:
+                            so = self.selected_handler_id
+                            de = release_handler
+                            self.add_line(so[1], so[2], de[1], de[2])
+                            print("Line drawn!")
         self.dragging = None
         self.repaint()
-
-    def mouseDoubleClickEvent(self, event: QMouseEvent):
-        pass
 
 
 if __name__ == "__main__":
