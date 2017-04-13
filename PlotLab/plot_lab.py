@@ -475,6 +475,7 @@ class DiagramWidget(QWidget):
         qp.begin(self)
         qp.scale(self.scale, self.scale)
         qp.translate(self.offset / self.scale)
+        qp.setRenderHint(QPainter.Antialiasing)
         self.draw_nodes(qp)
         qp.end()
 
@@ -526,6 +527,8 @@ class DiagramWidget(QWidget):
 
         if event.angleDelta().y() > 0:
             self.scale += delta_scale
+        elif self.scale <= delta_scale * 2:
+            return
         else:
             self.scale -= delta_scale
 
@@ -556,7 +559,7 @@ class DiagramWidget(QWidget):
             else:
                 self.dragging = ("plot", event.x(), event.y(), self.offset)
         elif event.button() == 2:
-            selected_line = self.line_under_cursor(event.x(), event.y())
+            selected_line = self.line_under_cursor(x, y)
             ni = self.node_under_cursor(x, y)
             self.selected_id = -1
             ns = self.nodes
