@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 import sys
 
 from PyQt5.QtCore import QPoint, QRect
-from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush, QKeyEvent
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QColor, QPen, QBrush, QKeyEvent, QWheelEvent
 from PyQt5.QtWidgets import *
 from typing import List, Set, Dict, Tuple
 
@@ -309,6 +309,8 @@ class DiagramWidget(QWidget):
         self.dragging = None
         self.drag_coordinates = None
         self.lines = []  # (i1, node_info1, i2, node_info2)
+        self.scale = 1
+        self.offset = QPoint(0, 0)
 
         for i in range(10):
             n = Node()
@@ -419,6 +421,8 @@ class DiagramWidget(QWidget):
 
             qp.drawEllipse(rect)
             qp.drawText(text_rect, node_info.text_height, "a")
+        qp.setPen(old_pen)
+        qp.setBrush(old_brush)
 
     def draw_nodes(self, qp: QPainter):
         if self.selected_id != -1:
@@ -469,6 +473,8 @@ class DiagramWidget(QWidget):
     def paintEvent(self, event: QPaintEvent):
         qp = QPainter()
         qp.begin(self)
+        qp.scale(self.scale, self.scale)
+        qp.translate(self.offset / self.scale)
         self.draw_nodes(qp)
         qp.end()
 
@@ -488,38 +494,70 @@ class DiagramWidget(QWidget):
         return None
 
     def mouseMoveEvent(self, event: QMouseEvent):
-        self.setWindowTitle("({}, {})".format(event.x(), event.y()))
+        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        self.setWindowTitle("({}, {})".format(x, y))
         if self.dragging is None:
             for ni in self.nodes:
                 ni.state = NodeInfo.State.normal
-            ni = self.node_under_cursor(event.x(), event.y())
+            ni = self.node_under_cursor(x, y)
             if ni is not None:
                 ni.state = NodeInfo.State.hover
-            handler_id = self.handler_under_cursor(event.x(), event.y())
+            handler_id = self.handler_under_cursor(x, y)
             self.selected_handler_id = handler_id
         elif self.dragging[0] == "drag":
-            delta_x = event.x() - self.dragging[1]
-            delta_y = event.y() - self.dragging[2]
+            delta_x = x - self.dragging[1]
+            delta_y = y - self.dragging[2]
             ni: NodeInfo = self.dragging[4]
             old_center: QPoint = self.dragging[3]
             ni.center = QPoint(old_center.x() + delta_x, old_center.y() + delta_y)
         elif self.dragging[0] == "line":
-            self.drag_coordinates = (event.x(), event.y())
+            self.drag_coordinates = (x, y)
+        elif self.dragging[0] == "plot":
+            delta_x = event.x() - self.dragging[1]
+            delta_y = event.y() - self.dragging[2]
+            old_offset: QPoint = self.dragging[3]
+            self.offset = QPoint(old_offset.x() + delta_x, old_offset.y() + delta_y)
+            print("({}, {})".format(self.offset.x(), self.offset.y()))
         self.repaint()
 
+    def wheelEvent(self, event: QWheelEvent):
+        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        delta_scale = 0.1
+
+        if event.angleDelta().y() > 0:
+            self.scale += delta_scale
+        else:
+            self.scale -= delta_scale
+
+        delta_x = x * delta_scale
+        delta_y = y * delta_scale
+
+        if event.angleDelta().y() > 0:
+            self.offset -= QPoint(delta_x, delta_y)
+        else:
+            self.offset += QPoint(delta_x, delta_y)
+
+        self.repaint()
+
+    def transform_mouse_coordinates(self, x, y):
+        return (x - self.offset.x()) / self.scale, (y - self.offset.y()) / self.scale
+
     def mousePressEvent(self, event: QMouseEvent):
+        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
         if event.button() == 1:
-            ni = self.node_under_cursor(event.x(), event.y())
+            ni = self.node_under_cursor(x, y)
 
             if ni is not None:
-                self.dragging = ("drag", event.x(), event.y(), ni.center, ni)
+                self.dragging = ("drag", x, y, ni.center, ni)
             elif self.selected_handler_id is not None:
                 if self.selected_handler_id[0] == 1:
                     self.dragging = ("line", self.selected_handler_id)
-                    self.drag_coordinates = (event.x(), event.y())
+                    self.drag_coordinates = (x, y)
+            else:
+                self.dragging = ("plot", event.x(), event.y(), self.offset)
         elif event.button() == 2:
             selected_line = self.line_under_cursor(event.x(), event.y())
-            ni = self.node_under_cursor(event.x(), event.y())
+            ni = self.node_under_cursor(x, y)
             self.selected_id = -1
             ns = self.nodes
             for i in range(len(self.nodes)):
@@ -531,8 +569,9 @@ class DiagramWidget(QWidget):
         self.repaint()
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
         if self.dragging is not None and self.dragging[0] == "line":
-            release_handler = self.handler_under_cursor(event.x(), event.y())
+            release_handler = self.handler_under_cursor(x, y)
             if release_handler is not None:
                 if self.selected_handler_id is not None:
                     if release_handler[0] == 0:
