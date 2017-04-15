@@ -11,20 +11,19 @@ from PlotLab.Classes.View.SchemeWidget import SchemeWidget
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    v = SchemeWidget()
-    s = QGraphicsScene()
-    v.setScene(s)
+    # v = SchemeWidget()
+    #
+    #
+    # v.show()
 
-    v.show()
-
-    for i in range(10):
-        c = DraggableWidget()
-        c.setGeometry(10, 10, 50, 50)
-        # c.drag_area = QRect(0, 0, 25, 25)
-        s.addWidget(c)
+    # for i in range(10):
+    #     c = DraggableWidget()
+    #     #c.setGeometry(10, 10, 50, 50)
+    #     c.drag_area = QRect(0, 0, 25, 25)
+    #     v.scene().addWidget(c)
 
     node_widget = DiagramWidget()
-    # node_widget.show()
+    node_widget.show()
 
     sys.exit(app.exec_())
 
