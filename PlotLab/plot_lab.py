@@ -1,9 +1,11 @@
 import sys
 
+from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import *
 
 from PlotLab.Classes.View.BoxDiagramItem import BoxDiagramItem
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
+from PlotLab.Classes.View.NodeItem import NodeItem
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -25,7 +27,13 @@ if __name__ == "__main__":
     dw = DiagramWidget()
     dw.show()
     bdi = BoxDiagramItem()
+    ni = NodeItem()
+
     dw.add_diagram_item(bdi)
+    ni.center = QPoint(100, 100)
+    dw.add_diagram_item(ni)
+    ni.set_node_inputs('x', 'y', 'z')
+    ni.set_node_outputs('a')
 
     sys.exit(app.exec_())
 

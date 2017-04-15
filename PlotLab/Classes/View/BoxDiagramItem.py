@@ -11,8 +11,13 @@ class BoxDiagramItem(DiagramItem):
         self.size = QSize(50, 50)
 
     def get_my_rect(self):
-        cx = self.center.x()
-        cy = self.center.y()
+        parent_cx = 0
+        parent_cy = 0
+        if self.parent is not None:
+            parent_cx = self.parent.center.x()
+            parent_cy = self.parent.center.y()
+        cx = self.center.x() + parent_cx
+        cy = self.center.y() + parent_cy
         sw = self.size.width()
         sh = self.size.height()
         rect = QRect(cx - sw / 2, cy - sh / 2, sw, sh)

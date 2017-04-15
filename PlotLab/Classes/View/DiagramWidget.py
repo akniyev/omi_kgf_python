@@ -20,7 +20,11 @@ class DiagramWidget(QWidget):
         self.setMouseTracking(True)
         self.dragging = None
 
-    def get_diagram_items(self) -> List[DiagramItem]:
+    def get_all_diagram_items(self) -> List[DiagramItem]:
+        result = []
+        for item in self.__items:
+            result.append(item)
+            result.extend(item.get_children())
         return self.__items
 
     def add_diagram_item(self, item: DiagramItem):
@@ -37,13 +41,13 @@ class DiagramWidget(QWidget):
         qp.end()
 
     def draw_nodes(self, qp: QPainter):
-        smeti = self.get_diagram_items()[:]
+        smeti = self.get_all_diagram_items()[:]
         smeti.reverse()
         for item in smeti:
             item.draw(qp)
 
     def get_first_item_under_cursor(self, x, y):
-        for item in self.get_diagram_items():
+        for item in self.get_all_diagram_items():
             if item.point_hit_check(x, y):
                 return item
         return None
@@ -98,7 +102,7 @@ class DiagramWidget(QWidget):
     def mouseMoveEvent(self, event: QMouseEvent):
         (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
         if self.dragging is None:
-            for item in self.get_diagram_items():
+            for item in self.get_all_diagram_items():
                 item.hover = False
             hover_item = self.get_first_item_under_cursor(x, y)
             if hover_item is not None:

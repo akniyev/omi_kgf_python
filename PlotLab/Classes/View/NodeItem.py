@@ -1,98 +1,92 @@
-from enum import Enum
+from typing import List
 
-from PyQt5.QtCore import QRect, QPoint
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QSize, QPoint, QRect
+from PyQt5.QtGui import QPainter, QBrush, QColor
+from PyQt5.Qt import *
 
 from PlotLab.Classes.Model.Node import Node
+from PlotLab.Classes.Model.NodeArgument import NodeArgument
+from PlotLab.Classes.Model.NodeResult import NodeResult
+from PlotLab.Classes.View.HandleItem import HandleItem
+from PlotLab.Classes.View.DiagramItem import DiagramItem
 
 
-class NodeItem:
-    class State(Enum):
-        normal = 0
-        selected = 1
-        hover = 2
-
+class NodeItem(DiagramItem):
     def __init__(self):
         super().__init__()
-        self.node: Node = None
-        self.center: QPoint = QPoint(0, 0)
-        self.width = 100
-        self.height = 100
-        self.state = self.State.normal
+        self.node: Node = Node()
+        self.input_handlers: List[HandleItem] = []
+        self.output_handlers: List[HandleItem] = []
+        self.size = QSize(50, 50)
+        self.handle_radius = 5
 
-        self.border_color = QColor(0, 0, 0)
-        self.border_color_selected = QColor(255, 201, 14)
-        self.border_color_hover = QColor(255, 237, 174)
-        self.border_width = 1
-        self.border_width_hover = 3
-        self.border_width_selected = 3
-        self.background_color = QColor(200, 200, 200)
-        self.background_color_selected = QColor(200, 200, 250)
-        self.background_color_hover = QColor(230, 230, 230)
+    def get_global_rect(self):
+        c = self.global_center()
+        s = self.size
+        return QRect(c.x() - s.width() / 2 + self.handle_radius * 2, c.y() - s.height() / 2, s.width() - 2 * self.handle_radius * 2, s.height())
 
-        self.handler_radius = 5
-        self.text_height = 10
+    def point_hit_check(self, x, y):
+        return self.get_global_rect().contains(x, y)
 
-    def get_background_color(self):
-        if self.state == self.State.normal:
-            return self.background_color
-        elif self.state == self.State.hover:
-            return self.background_color_hover
-        else:
-            return self.background_color_selected
+    def get_children(self):
+        return self.input_handlers + self.output_handlers
 
-    def get_border_color(self):
-        if self.state == self.State.normal:
-            return self.border_color
-        elif self.state == self.State.hover:
-            return self.border_color_hover
-        else:
-            return self.border_color_selected
+    def draw(self, qp: QPainter):
+        rect = self.get_global_rect()
+        qp.drawRect(rect)
+        brush = QBrush()
+        brush.setColor(QColor("green"))
+        brush.setStyle(Qt.SolidPattern)
+        qp.fillRect(rect, brush)
+        for i in self.input_handlers:
+            i.draw(qp)
+        for o in self.output_handlers:
+            o.draw(qp)
 
-    def get_border_width(self):
-        if self.state == self.State.normal:
-            return self.border_width
-        elif self.state == self.State.hover:
-            return self.border_width_hover
-        else:
-            return self.border_width_selected
+    def set_node_inputs(self, *inputs):
 
-    def get_node_rect(self) -> QRect:
-        c = self.center
-        w = self.width
-        h = self.height
-        return QRect(c.x() - w / 2, c.y() - h / 2, w, h)
+        self.node.set_arguments(*list(inputs))
+        self.rebuild_handles()
 
-    def point_over_node(self, x, y):
-        rect = self.get_node_rect()
-        return rect.contains(x, y)
+    def set_node_outputs(self, *outputs):
+        self.node.set_results(*list(outputs))
+        self.rebuild_handles()
 
-    def get_handle_center(self, i, n, position):
-        dist_from_edge = 5
-        center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
-        center_x = self.center.x() + position * (self.width / 2 + dist_from_edge)
-        return QPoint(center_x, center_y)
+    def add_node_input(self, input_name):
+        self.node.add_argument(input_name)
+        self.rebuild_handles()
 
-    def get_handle_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
-        center = self.get_handle_center(i, n, position)
-        radius = self.handler_radius
-        return QRect(center.x() - radius, center.y() - radius, radius * 2, radius * 2)
+    def add_node_output(self, output_name):
+        self.node.add_result(output_name)
+        self.rebuild_handles()
 
-    def get_handle_text_rect(self, i, n, position): # i: number of handle, n: total number of handlers, position: 1 or -1 (left, right)
-        center_y = (self.center.y() - self.height / 2) + (i + 0.5) * (self.height / n)
-        radius = self.text_height
-        center_x = self.center.x() + self.width / 2 - radius if position == 1 else self.center.x() - self.width / 2
+    def rebuild_handles(self):
+        self.input_handlers: List[HandleItem] = []
+        self.output_handlers: List[HandleItem] = []
+        for input in self.node.arguments:
+            ihandle = HandleItem()
+            ihandle.name = input
+            ihandle.radius = self.handle_radius
+            ihandle.parent = self
+            self.input_handlers.append(ihandle)
+        for output in self.node.results:
+            ohandle = HandleItem()
+            ohandle.name = output
+            ohandle.radius = self.handle_radius
+            ohandle.parent = self
+            self.output_handlers.append(ohandle)
+        iN = len(self.input_handlers)
+        for i in range(iN):
+            s = self.size
+            cx = - (s.width() / 2 - self.handle_radius / 2)
+            cy = - s.height() / 2 + s.height() / iN * (i + 0.5)
+            self.input_handlers[i].center = QPoint(cx, cy)
+        oN = len(self.output_handlers)
+        for i in range(oN):
+            s = self.size
+            cx = (s.width() / 2 - self.handle_radius / 2)
+            cy = - s.height() / 2 + s.height() / oN * (i + 0.5)
+            self.output_handlers[i].center = QPoint(cx, cy)
 
-        return QRect(center_x - radius, center_y - radius, radius * 2, radius * 2)
 
-    def point_over_handle(self, x, y):
-        n = len(self.node.arguments)
-        for i in range(n):
-            if self.get_handle_rect(i, n, -1).contains(QPoint(x, y)):
-                return 0, i, self
 
-        n = len(self.node.results)
-        for i in range(n):
-            if self.get_handle_rect(i, n, 1).contains(QPoint(x, y)):
-                return 1, i, self
-        return None

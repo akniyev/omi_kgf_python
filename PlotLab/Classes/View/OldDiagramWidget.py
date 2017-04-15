@@ -7,13 +7,13 @@ from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QPaintEvent, QMouseEvent
 from PyQt5.QtWidgets import QWidget, QPushButton
 
 from PlotLab.Classes.Model.Node import Node
-from PlotLab.Classes.View.NodeItem import NodeItem
+from PlotLab.Classes.View.NodeItemOld import NodeItemOld
 
 
 class OldDiagramWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.nodes: List[NodeItem] = []
+        self.nodes: List[NodeItemOld] = []
         self.setMouseTracking(True)
         self.selected_id = -1
         self.selected_handler_id = None
@@ -30,13 +30,13 @@ class OldDiagramWidget(QWidget):
             n = Node()
             n.set_arguments('x', 'y', 'z')
             n.set_results('a', 'b')
-            ni = NodeItem()
+            ni = NodeItemOld()
             ni.node = n
             ni.center = QPoint(randint(0, self.width()), randint(0, self.height()))
 
             self.nodes.append(ni)
 
-    def add_line(self, i1: int, node_info1: NodeItem, i2: int, node_info2: NodeItem):
+    def add_line(self, i1: int, node_info1: NodeItemOld, i2: int, node_info2: NodeItemOld):
         for line in self.lines:
             if line[2] == i2 and line[3] == node_info2:
                 return
@@ -76,7 +76,7 @@ class OldDiagramWidget(QWidget):
 
         return distance_point_line
 
-    def draw_node(self, qp: QPainter, node_info: NodeItem):
+    def draw_node(self, qp: QPainter, node_info: NodeItemOld):
         background_color = node_info.get_background_color()
         border_color = node_info.get_border_color()
         border_width = node_info.get_border_width()
@@ -141,7 +141,7 @@ class OldDiagramWidget(QWidget):
 
     def draw_nodes(self, qp: QPainter):
         if self.selected_id != -1:
-            self.nodes[self.selected_id].state = NodeItem.State.selected
+            self.nodes[self.selected_id].state = NodeItemOld.State.selected
         for ni in self.nodes:
             self.draw_node(qp, ni)
         self.draw_temporal_line(qp)
@@ -159,16 +159,16 @@ class OldDiagramWidget(QWidget):
                     d = self.dragging[1]
                     position = d[0] * 2 - 1
                     i = d[1]
-                    ni: NodeItem = d[2]
+                    ni: NodeItemOld = d[2]
                     n = len(ni.node.arguments if position < 0 else ni.node.results)
                     c = ni.get_handle_center(i, n, position)
                     qp.drawLine(c.x(), c.y(), self.drag_coordinates[0], self.drag_coordinates[1])
 
     def get_line_coordinates(self, line) -> Tuple[QPoint, QPoint]:
         i1 = line[0]
-        ni1: NodeItem = line[1]
+        ni1: NodeItemOld = line[1]
         i2 = line[2]
-        ni2: NodeItem = line[3]
+        ni2: NodeItemOld = line[3]
         n1 = len(ni1.node.results)
         n2 = len(ni2.node.arguments)
         c1 = ni1.get_handle_center(i1, n1, 1)
@@ -213,16 +213,16 @@ class OldDiagramWidget(QWidget):
         self.setWindowTitle("({}, {})".format(x, y))
         if self.dragging is None:
             for ni in self.nodes:
-                ni.state = NodeItem.State.normal
+                ni.state = NodeItemOld.State.normal
             ni = self.node_under_cursor(x, y)
             if ni is not None:
-                ni.state = NodeItem.State.hover
+                ni.state = NodeItemOld.State.hover
             handler_id = self.handler_under_cursor(x, y)
             self.selected_handler_id = handler_id
         elif self.dragging[0] == "drag":
             delta_x = x - self.dragging[1]
             delta_y = y - self.dragging[2]
-            ni: NodeItem = self.dragging[4]
+            ni: NodeItemOld = self.dragging[4]
             old_center: QPoint = self.dragging[3]
             ni.center = QPoint(old_center.x() + delta_x, old_center.y() + delta_y)
         elif self.dragging[0] == "line":
