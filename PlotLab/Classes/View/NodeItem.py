@@ -6,7 +6,7 @@ from PyQt5.QtGui import QColor
 from PlotLab.Classes.Model.Node import Node
 
 
-class NodeInfo:
+class NodeItem:
     class State(Enum):
         normal = 0
         selected = 1
