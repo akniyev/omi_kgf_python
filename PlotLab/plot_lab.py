@@ -1,4 +1,5 @@
 import sys
+from random import random, randint
 
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import *
@@ -27,13 +28,14 @@ if __name__ == "__main__":
     dw = DiagramWidget()
     dw.show()
     bdi = BoxDiagramItem()
-    ni = NodeItem()
 
     dw.add_diagram_item(bdi)
-    ni.center = QPoint(100, 100)
-    dw.add_diagram_item(ni)
-    ni.set_node_inputs('x', 'y', 'z')
-    ni.set_node_outputs('a')
+    for i in range(3):
+        ni = NodeItem()
+        ni.center = QPoint(randint(1, 400), randint(1, 400))
+        dw.add_diagram_item(ni)
+        ni.set_node_inputs('x', 'y', 'z')
+        ni.set_node_outputs('a')
 
     sys.exit(app.exec_())
 

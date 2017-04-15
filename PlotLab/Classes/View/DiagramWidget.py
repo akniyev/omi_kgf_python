@@ -1,10 +1,13 @@
 from typing import List
 
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QWheelEvent
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QWheelEvent, QColor, QPen
 from PyQt5.QtWidgets import QWidget
 
-from PlotLab.Classes.View.DiagramItem import DiagramItem
+from PlotLab.Classes.View.DiagramItem import DiagramItem, DragType
+from PlotLab.Classes.View.HandleItem import HandleItem, HandleType
+from PlotLab.Classes.View.LineItem import LineItem
+from PlotLab.Classes.View.NodeItem import NodeItem
 
 
 class DiagramWidget(QWidget):
@@ -19,13 +22,14 @@ class DiagramWidget(QWidget):
         # Mouse interaction
         self.setMouseTracking(True)
         self.dragging = None
+        self.cursor_position = QPoint()
 
     def get_all_diagram_items(self) -> List[DiagramItem]:
         result = []
         for item in self.__items:
             result.append(item)
             result.extend(item.get_children())
-        return self.__items
+        return result
 
     def add_diagram_item(self, item: DiagramItem):
         self.__items.append(item)
@@ -38,7 +42,33 @@ class DiagramWidget(QWidget):
         qp.translate(self.offset / self.scale)
         qp.setRenderHint(QPainter.Antialiasing)
         self.draw_nodes(qp)
+        self.draw_drag_line(qp)
+        self.draw_lines(qp)
+
         qp.end()
+
+    def draw_lines(self, qp: QPainter):
+        lines = self.get_all_lines()
+        for line in lines:
+            line.draw(qp)
+
+
+    def draw_drag_line(self, qp: QPainter):
+        if self.dragging is not None:
+            if self.dragging["type"] == "line":
+                s: DiagramItem = self.dragging["source"]
+                start_point = s.global_center()
+                end_point = self.cursor_position
+                pen = QPen(QColor("green"))
+                pen.setWidth(2)
+                qp.setPen(pen)
+                qp.drawLine(start_point, end_point)
+
+    def get_all_lines(self) -> List[LineItem]:
+        result = set()
+        for i in self.get_all_diagram_items():
+            result = result.union(i.get_lines())
+        return result
 
     def draw_nodes(self, qp: QPainter):
         smeti = self.get_all_diagram_items()[:]
@@ -46,8 +76,21 @@ class DiagramWidget(QWidget):
         for item in smeti:
             item.draw(qp)
 
+    def connect_with_line(self, h1: HandleItem, h2: HandleItem):
+        if h1.type == HandleType.Input and h2.type == HandleType.Output:
+            h = h1
+            h1 = h2
+            h2 = h
+        elif h1.type != HandleType.Output or h2.type != HandleType.Input:
+            return
+        line = LineItem()
+        line.set_ends(h1, h2)
+
     def get_first_item_under_cursor(self, x, y):
         for item in self.get_all_diagram_items():
+            if item.point_hit_check(x, y):
+                return item
+        for item in self.get_all_lines():
             if item.point_hit_check(x, y):
                 return item
         return None
@@ -55,8 +98,10 @@ class DiagramWidget(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
         item = self.get_first_item_under_cursor(x ,y)
-        if item is not None and item.movable:
+        if item is not None and item.movable == DragType.Movable:
             self.dragging = {"type": "item", "cursor": QPoint(x, y), "obj_center": item.center, "item": item}
+        elif item is not None and item.movable == DragType.Line:
+            self.dragging = {"type": "line", "source": item}
         elif item is None:
             self.dragging = {"type": "scene", "cursor": QPoint(event.x(), event.y()), "obj_center": self.offset}
         # if event.button() == 1:
@@ -85,6 +130,10 @@ class DiagramWidget(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        if self.dragging is not None and self.dragging["type"] == "line":
+            dest_item = self.get_first_item_under_cursor(x, y)
+            if dest_item is not None and type(dest_item) == HandleItem:
+                self.connect_with_line(self.dragging["source"], dest_item)
         self.dragging = None
         # if self.dragging is not None and self.dragging[0] == "line":
         #     release_handler = self.handler_under_cursor(x, y)
@@ -101,8 +150,11 @@ class DiagramWidget(QWidget):
 
     def mouseMoveEvent(self, event: QMouseEvent):
         (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        self.cursor_position = QPoint(x, y)
         if self.dragging is None:
             for item in self.get_all_diagram_items():
+                item.hover = False
+            for item in self.get_all_lines():
                 item.hover = False
             hover_item = self.get_first_item_under_cursor(x, y)
             if hover_item is not None:
@@ -162,6 +214,12 @@ class DiagramWidget(QWidget):
             self.offset += QPoint(delta_x, delta_y)
 
         self.repaint()
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        item = self.get_first_item_under_cursor(x, y)
+        if item is not None and type(item) == NodeItem:
+            print("Open settings...")
 
     def transform_mouse_coordinates(self, x, y):
         return (x - self.offset.x()) / self.scale, (y - self.offset.y()) / self.scale
