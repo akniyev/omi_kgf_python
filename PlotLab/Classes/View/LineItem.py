@@ -12,8 +12,8 @@ class LineItem(DiagramItem):
     def __init__(self):
         super().__init__()
         self.movable = DragType.Immovable
-        self.source: DiagramItem = None
-        self.destination: DiagramItem = None
+        self.source: ha.HandleItem = None
+        self.destination: ha.HandleItem = None
 
     def set_ends(self, s: ha.HandleItem, d: ha.HandleItem):
         if s.parent is not None and d.parent is not None and self.no_cycle(d.parent, set([s.parent])):
@@ -28,8 +28,8 @@ class LineItem(DiagramItem):
             return
         p1 = self.source.global_center()
         p2 = self.destination.global_center()
-        pen = QPen(QColor("black"))
-        pen.setWidth(1 if not self.hover else 3)
+        pen = QPen(QColor("black") if not self.selected else QColor(100, 100, 200))
+        pen.setWidth(1 if not (self.hover or self.selected) else 3)
         qp.setPen(pen)
         qp.drawLine(p1, p2)
 

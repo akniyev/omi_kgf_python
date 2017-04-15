@@ -1,8 +1,10 @@
 from typing import List
 
+import math
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QWheelEvent, QColor, QPen
+from PyQt5.QtGui import QPaintEvent, QPainter, QMouseEvent, QWheelEvent, QColor, QPen, QKeyEvent
 from PyQt5.QtWidgets import QWidget
+from PyQt5.Qt import *
 
 from PlotLab.Classes.View.DiagramItem import DiagramItem, DragType
 from PlotLab.Classes.View.HandleItem import HandleItem, HandleType
@@ -19,10 +21,14 @@ class DiagramWidget(QWidget):
         self.scale = 1
         self.offset = QPoint(0, 0)
 
+        # Selection
+        self.selected = set()
+
         # Mouse interaction
         self.setMouseTracking(True)
         self.dragging = None
         self.cursor_position = QPoint()
+        self.last_press_cursor_position = QPoint()
 
     def get_all_diagram_items(self) -> List[DiagramItem]:
         result = []
@@ -52,7 +58,6 @@ class DiagramWidget(QWidget):
         for line in lines:
             line.draw(qp)
 
-
     def draw_drag_line(self, qp: QPainter):
         if self.dragging is not None:
             if self.dragging["type"] == "line":
@@ -76,7 +81,17 @@ class DiagramWidget(QWidget):
         for item in smeti:
             item.draw(qp)
 
-    def connect_with_line(self, h1: HandleItem, h2: HandleItem):
+    def select_deselect(self, item: DiagramItem):
+        if type(item) == NodeItem or type(item) == LineItem:
+            if item in self.selected:
+                self.selected.remove(item)
+                item.selected = False
+            else:
+                self.selected.add(item)
+                item.selected = True
+
+    @staticmethod
+    def connect_with_line(h1: HandleItem, h2: HandleItem):
         if h1.type == HandleType.Input and h2.type == HandleType.Output:
             h = h1
             h1 = h2
@@ -97,6 +112,7 @@ class DiagramWidget(QWidget):
 
     def mousePressEvent(self, event: QMouseEvent):
         (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+        self.last_press_cursor_position = QPoint(x, y)
         item = self.get_first_item_under_cursor(x ,y)
         if item is not None and item.movable == DragType.Movable:
             self.dragging = {"type": "item", "cursor": QPoint(x, y), "obj_center": item.center, "item": item}
@@ -134,6 +150,8 @@ class DiagramWidget(QWidget):
             dest_item = self.get_first_item_under_cursor(x, y)
             if dest_item is not None and type(dest_item) == HandleItem:
                 self.connect_with_line(self.dragging["source"], dest_item)
+        elif math.fabs(self.last_press_cursor_position.x() - x) < 1 and math.fabs(self.last_press_cursor_position.y() - y) < 1:
+                self.select_deselect(self.get_first_item_under_cursor(x, y))
         self.dragging = None
         # if self.dragging is not None and self.dragging[0] == "line":
         #     release_handler = self.handler_under_cursor(x, y)
@@ -223,3 +241,38 @@ class DiagramWidget(QWidget):
 
     def transform_mouse_coordinates(self, x, y):
         return (x - self.offset.x()) / self.scale, (y - self.offset.y()) / self.scale
+
+    def keyReleaseEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key_Delete:
+            self.delete_selected()
+
+
+    # Add/Delete items
+    def delete_line(self, line: LineItem, repaint = True):
+        s = line.source
+        d = line.destination
+        s.output_lines.remove(line)
+        d.input_line = None
+        if repaint:
+            self.repaint()
+
+    def delete_node(self, node: NodeItem, repaint = True):
+        node_lines = node.get_lines()
+        for line in node_lines:
+            self.delete_line(line)
+        if node in self.__items:
+            self.__items.remove(node)
+        if repaint:
+            self.repaint()
+
+    def delete_selected(self):
+        for item in self.selected:
+            self.selected.remove(item)
+
+            if item is not None:
+                if type(item) == NodeItem:
+                    self.delete_node(item, False)
+                elif type(item) == LineItem:
+                    self.delete_line(item, False)
+
+        self.repaint()

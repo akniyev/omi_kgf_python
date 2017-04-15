@@ -30,7 +30,7 @@ if __name__ == "__main__":
     bdi = BoxDiagramItem()
 
     dw.add_diagram_item(bdi)
-    for i in range(3):
+    for i in range(4):
         ni = NodeItem()
         ni.center = QPoint(randint(1, 400), randint(1, 400))
         dw.add_diagram_item(ni)

@@ -43,7 +43,7 @@ class NodeItem(DiagramItem):
     def draw(self, qp: QPainter):
         rect = self.get_global_rect()
         brush = QBrush()
-        brush.setColor(QColor("green"))
+        brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
         brush.setStyle(Qt.SolidPattern)
         qp.fillRect(rect, brush)
         pen = QPen(QColor("black"))
