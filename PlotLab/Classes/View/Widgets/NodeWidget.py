@@ -1,8 +1,7 @@
 from PyQt5.QtCore import QRect
-from PyQt5.QtWidgets import QGridLayout
 
 from PlotLab.Classes.Model.Node import Node
-from PlotLab.Classes.View.DraggableWidget import DraggableWidget
+from PlotLab.Classes.View.Widgets.DraggableWidget import DraggableWidget
 
 
 class NodeWidget(DraggableWidget):

@@ -1,12 +1,9 @@
 import sys
-from PyQt5 import Qt
-from PyQt5.Qt import *
 
-from PyQt5.QtGui import QPaintEvent, QPainter
 from PyQt5.QtWidgets import *
+
+from PlotLab.Classes.View.BoxDiagramItem import BoxDiagramItem
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
-from PlotLab.Classes.View.DraggableWidget import DraggableWidget
-from PlotLab.Classes.View.SchemeWidget import SchemeWidget
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -22,8 +19,13 @@ if __name__ == "__main__":
     #     c.drag_area = QRect(0, 0, 25, 25)
     #     v.scene().addWidget(c)
 
-    node_widget = DiagramWidget()
-    node_widget.show()
+    # node_widget = OldDiagramWidget()
+    # node_widget.show()
+
+    dw = DiagramWidget()
+    dw.show()
+    bdi = BoxDiagramItem()
+    dw.add_diagram_item(bdi)
 
     sys.exit(app.exec_())
 

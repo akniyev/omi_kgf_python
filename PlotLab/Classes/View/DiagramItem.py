@@ -9,8 +9,9 @@ class DiagramItem:
     def __init__(self):
         self.hover = False
         self.selected = False
+        self.center = QPoint()
         self.movable = True
-        self.children: List[DiagramItem] = []
+        # self.children: List[DiagramItem] = []
 
     def point_hit_check(self, x, y) -> bool:
         return False
