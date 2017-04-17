@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from PlotLab.Classes.View.BoxDiagramItem import BoxDiagramItem
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
 from PlotLab.Classes.View.NodeItem import NodeItem
+from PlotLab.Classes.View.NodeSettingsWidget import NodeSettingsWidget
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -30,6 +31,9 @@ if __name__ == "__main__":
     bdi = BoxDiagramItem()
 
     dw.add_diagram_item(bdi)
+    sw = NodeSettingsWidget()
+    dw.settings_widget = sw
+    sw.show()
     for i in range(4):
         ni = NodeItem()
         ni.center = QPoint(randint(1, 400), randint(1, 400))

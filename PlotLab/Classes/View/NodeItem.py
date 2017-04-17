@@ -21,6 +21,10 @@ class NodeItem(DiagramItem):
         self.size = QSize(70, 50)
         self.handle_radius = 5
         self.text_height = 15
+        self.function_body = ("@staticmethod\n"
+                              "def compute_values(self, values):\n"
+                              "  pass\n")
+
 
     def get_global_rect(self):
         c = self.global_center()
@@ -61,13 +65,14 @@ class NodeItem(DiagramItem):
         return QRect(c.x() - self.size.width() / 2 + self.handle_radius, c.y() - self.text_height / 2, self.size.width() - self.handle_radius * 2, self.text_height)
 
     def set_node_inputs(self, *inputs):
-
-        self.node.set_arguments(*list(inputs))
-        self.rebuild_handles()
+        pass
+        #self.node.set_arguments(*list(inputs))
+        #self.rebuild_handles()
 
     def set_node_outputs(self, *outputs):
-        self.node.set_results(*list(outputs))
-        self.rebuild_handles()
+        pass
+        # self.node.set_results(*list(outputs))
+        # self.rebuild_handles()
 
     def add_node_input(self, input_name):
         self.node.add_argument(input_name)
