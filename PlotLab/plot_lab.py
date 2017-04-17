@@ -1,30 +1,41 @@
 import sys
-from PyQt5 import Qt
-from PyQt5.Qt import *
+from random import random, randint
 
-from PyQt5.QtGui import QPaintEvent, QPainter
+from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import *
+
+from PlotLab.Classes.View.BoxDiagramItem import BoxDiagramItem
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
-from PlotLab.Classes.View.DraggableWidget import DraggableWidget
-from PlotLab.Classes.View.SchemeWidget import SchemeWidget
+from PlotLab.Classes.View.NodeItem import NodeItem
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    v = SchemeWidget()
-    s = QGraphicsScene()
-    v.setScene(s)
+    # v = SchemeWidget()
+    #
+    #
+    # v.show()
 
-    v.show()
+    # for i in range(10):
+    #     c = DraggableWidget()
+    #     #c.setGeometry(10, 10, 50, 50)
+    #     c.drag_area = QRect(0, 0, 25, 25)
+    #     v.scene().addWidget(c)
 
-    for i in range(10):
-        c = DraggableWidget()
-        c.setGeometry(10, 10, 50, 50)
-        # c.drag_area = QRect(0, 0, 25, 25)
-        s.addWidget(c)
-
-    node_widget = DiagramWidget()
+    # node_widget = OldDiagramWidget()
     # node_widget.show()
+
+    dw = DiagramWidget()
+    dw.show()
+    bdi = BoxDiagramItem()
+
+    dw.add_diagram_item(bdi)
+    for i in range(4):
+        ni = NodeItem()
+        ni.center = QPoint(randint(1, 400), randint(1, 400))
+        dw.add_diagram_item(ni)
+        ni.set_node_inputs('x', 'y', 'z')
+        ni.set_node_outputs('a')
 
     sys.exit(app.exec_())
 
