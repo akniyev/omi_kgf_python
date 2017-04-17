@@ -65,7 +65,21 @@ class NodeItem(DiagramItem):
         return QRect(c.x() - self.size.width() / 2 + self.handle_radius, c.y() - self.text_height / 2, self.size.width() - self.handle_radius * 2, self.text_height)
 
     def set_node_inputs(self, *inputs):
-        pass
+        if len(set(inputs)) < len(inputs):
+            return
+
+        old_inputs = map(lambda x: x.name, self.input_handlers)
+        to_delete = []
+        to_add = []
+        for new_input_name in inputs:
+            if new_input_name not in old_inputs:
+                to_add.append(new_input_name)
+        for old_name in old_inputs:
+            if old_name not in inputs:
+                to_delete.append(old_name)
+
+        print(to_add)
+        print(to_delete)
         #self.node.set_arguments(*list(inputs))
         #self.rebuild_handles()
 
