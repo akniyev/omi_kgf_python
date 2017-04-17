@@ -15,6 +15,14 @@ class LineItem(DiagramItem):
         self.source: ha.HandleItem = None
         self.destination: ha.HandleItem = None
 
+    def remove(self):
+        s = self.source
+        d = self.destination
+        if s is not None and d is not None:
+            if self in s.output_lines:
+                s.output_lines.remove(self)
+            d.input_line = None
+
     def set_ends(self, s: ha.HandleItem, d: ha.HandleItem):
         if s.parent is not None and d.parent is not None and self.no_cycle(d.parent, set([s.parent])):
             if d.input_line is None and self not in s.output_lines and s.parent != d.parent:

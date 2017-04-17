@@ -64,37 +64,95 @@ class NodeItem(DiagramItem):
         c = self.global_center()
         return QRect(c.x() - self.size.width() / 2 + self.handle_radius, c.y() - self.text_height / 2, self.size.width() - self.handle_radius * 2, self.text_height)
 
-    def set_node_inputs(self, *inputs):
-        if len(set(inputs)) < len(inputs):
-            return
-
-        old_inputs = map(lambda x: x.name, self.input_handlers)
-        to_delete = []
-        to_add = []
+    def set_node_inputs(self, inputs: List[str]):
+        old_inputs = list(map(lambda x: x.name, self.input_handlers))
+        inputs_to_delete = []
+        inputs_to_add = []
         for new_input_name in inputs:
             if new_input_name not in old_inputs:
-                to_add.append(new_input_name)
+                inputs_to_add.append(new_input_name)
         for old_name in old_inputs:
             if old_name not in inputs:
-                to_delete.append(old_name)
+                inputs_to_delete.append(old_name)
+        for input_name in inputs_to_add:
+            self.add_node_input(input_name)
+        for input_name in inputs_to_delete:
+            self.delete_node_input(input_name)
 
-        print(to_add)
-        print(to_delete)
-        #self.node.set_arguments(*list(inputs))
-        #self.rebuild_handles()
-
-    def set_node_outputs(self, *outputs):
-        pass
-        # self.node.set_results(*list(outputs))
-        # self.rebuild_handles()
+    def set_node_outputs(self, outputs: List[str]):
+        old_outputs = list(map(lambda x: x.name, self.output_handlers))
+        outputs_to_delete = []
+        outputs_to_add = []
+        for new_output_name in outputs:
+            if new_output_name not in old_outputs:
+                outputs_to_add.append(new_output_name)
+        for old_name in old_outputs:
+            if old_name not in outputs:
+                outputs_to_delete.append(old_name)
+        for output_name in outputs_to_add:
+            self.add_node_output(output_name)
+        for output_name in outputs_to_delete:
+            self.delete_node_output(output_name)
 
     def add_node_input(self, input_name):
-        self.node.add_argument(input_name)
-        self.rebuild_handles()
+        item = HandleItem()
+        item.name = input_name
+        item.type = HandleType.Input
+        item.radius = self.handle_radius
+        item.parent = self
+        self.input_handlers.append(item)
+        self.order_handlers()
 
     def add_node_output(self, output_name):
-        self.node.add_result(output_name)
-        self.rebuild_handles()
+        item = HandleItem()
+        item.name = output_name
+        item.type = HandleType.Output
+        item.radius = self.handle_radius
+        item.parent = self
+        self.output_handlers.append(item)
+        self.order_handlers()
+
+    def delete_node_input(self, input_name):
+        item = None
+        for i in self.input_handlers:
+            if i.name == input_name:
+                item = i
+                break
+        if item is not None:
+            if item.input_line is not None:
+                item.input_line.remove()
+            for ol in list(item.output_lines):
+                ol.remove()
+            self.input_handlers.remove(item)
+        self.order_handlers()
+
+    def delete_node_output(self, output_name):
+        item = None
+        for i in self.output_handlers:
+            if i.name == output_name:
+                item = i
+                break
+        if item is not None:
+            if item.input_line is not None:
+                item.input_line.remove()
+            for ol in list(item.output_lines):
+                ol.remove()
+            self.output_handlers.remove(item)
+        self.order_handlers()
+
+    def order_handlers(self):
+        iN = len(self.input_handlers)
+        for i in range(iN):
+            s = self.size
+            cx = - (s.width() / 2 - self.handle_radius / 2)
+            cy = - s.height() / 2 + s.height() / iN * (i + 0.5)
+            self.input_handlers[i].center = QPoint(cx, cy)
+        oN = len(self.output_handlers)
+        for i in range(oN):
+            s = self.size
+            cx = (s.width() / 2 - self.handle_radius / 2)
+            cy = - s.height() / 2 + s.height() / oN * (i + 0.5)
+            self.output_handlers[i].center = QPoint(cx, cy)
 
     def rebuild_handles(self):
         self.input_handlers: List[HandleItem] = []
@@ -113,18 +171,7 @@ class NodeItem(DiagramItem):
             ohandle.radius = self.handle_radius
             ohandle.parent = self
             self.output_handlers.append(ohandle)
-        iN = len(self.input_handlers)
-        for i in range(iN):
-            s = self.size
-            cx = - (s.width() / 2 - self.handle_radius / 2)
-            cy = - s.height() / 2 + s.height() / iN * (i + 0.5)
-            self.input_handlers[i].center = QPoint(cx, cy)
-        oN = len(self.output_handlers)
-        for i in range(oN):
-            s = self.size
-            cx = (s.width() / 2 - self.handle_radius / 2)
-            cy = - s.height() / 2 + s.height() / oN * (i + 0.5)
-            self.output_handlers[i].center = QPoint(cx, cy)
+
 
 
 

@@ -199,15 +199,13 @@ class DiagramWidget(QWidget):
             self.delete_selected()
 
     # Add/Delete items
-    def delete_line(self, line: LineItem, repaint = True):
-        s = line.source
-        d = line.destination
-        s.output_lines.remove(line)
-        d.input_line = None
+    def delete_line(self, line: LineItem, repaint=True):
+        line.remove()
         if repaint:
             self.repaint()
 
-    def delete_node(self, node: NodeItem, repaint = True):
+    def delete_node(self, node: NodeItem, repaint=True):
+        return
         node_lines = node.get_lines()
         for line in node_lines:
             self.delete_line(line)
@@ -217,7 +215,7 @@ class DiagramWidget(QWidget):
             self.repaint()
 
     def delete_selected(self):
-        for item in self.selected:
+        for item in list(self.selected):
             self.selected.remove(item)
             if item is not None:
                 if type(item) == NodeItem:

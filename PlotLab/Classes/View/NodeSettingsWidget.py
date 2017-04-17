@@ -42,6 +42,7 @@ class NodeSettingsWidget(QWidget):
         metrics = QFontMetrics(font)
         self.function_body_textedit.setFont(font)
         self.function_body_textedit.setTabStopWidth(2 * metrics.width(' '))
+        self.function_body_textedit.setLineWrapMode(QTextEdit.NoWrap)
 
         # Adding widgets
         self.vbox.addWidget(self.name_label)
@@ -78,18 +79,19 @@ class NodeSettingsWidget(QWidget):
 
         self.function_body_textedit.setText(node.function_body)
 
-    def save_action(self, sender):
+    def save_action(self, sender: DiagramWidget):
         if self.node is None:
             return
         self.node.name = self.name_textedit.text()
+
+        input_names = self.arguments_textedit.text().split()
+        self.node.set_node_inputs(input_names)
+
+        output_names = self.results_textedit.text().split()
+        self.node.set_node_outputs(output_names)
 
         self.sender.reload_graph()
 
     def reset_action(self, sender):
         if self.node is not None:
             self.load_ui_from_node(self.node)
-
-
-
-
-

@@ -28,9 +28,9 @@ if __name__ == "__main__":
 
     dw = DiagramWidget()
     dw.show()
-    bdi = BoxDiagramItem()
+    # bdi = BoxDiagramItem()
 
-    dw.add_diagram_item(bdi)
+    # dw.add_diagram_item(bdi)
     sw = NodeSettingsWidget()
     dw.settings_widget = sw
     sw.show()
@@ -38,8 +38,8 @@ if __name__ == "__main__":
         ni = NodeItem()
         ni.center = QPoint(randint(1, 400), randint(1, 400))
         dw.add_diagram_item(ni)
-        ni.set_node_inputs('x', 'y', 'z')
-        ni.set_node_outputs('a')
+        ni.set_node_inputs(['x', 'y', 'z'])
+        ni.set_node_outputs(['a'])
 
     sys.exit(app.exec_())
 
