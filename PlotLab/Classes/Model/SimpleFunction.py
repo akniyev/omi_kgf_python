@@ -22,5 +22,4 @@ class SimpleFunction(Function):
             computed_result[arg_name] = arg_value
         for node_result in results:
             node_result.value = computed_result[node_result.name]
-
         return True

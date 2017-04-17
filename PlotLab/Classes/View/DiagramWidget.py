@@ -186,6 +186,9 @@ class DiagramWidget(QWidget):
         item = self.get_first_item_under_cursor(x, y)
         if item is not None and type(item) == NodeItem:
             self.open_settings(item)
+        elif item is not None and type(item) == HandleItem:
+            if item.type == HandleType.Output:
+                print("VALUE: %s" % item.out_value)
 
     def open_settings(self, node: NodeItem):
         if self.settings_widget is not None:
@@ -225,3 +228,18 @@ class DiagramWidget(QWidget):
 
     def reload_graph(self):
         self.repaint()
+
+    # Calculating
+    def calculated_inputs_nodes(self):
+        result = []
+        for node in self.__items:
+            if type(node) == NodeItem:
+                if node.is_ready_to_compute() and not node.is_result_computed():
+                    result.append(node)
+        return result
+
+    def calculate_iteration(self):
+        nodes_to_calculate = self.calculated_inputs_nodes()
+        print(len(nodes_to_calculate))
+        for node in nodes_to_calculate:
+            node.compute()

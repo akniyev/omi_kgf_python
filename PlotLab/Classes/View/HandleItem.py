@@ -20,9 +20,10 @@ class HandleItem(DiagramItem):
         self.name = ""
         self.type: HandleType = HandleType.Input
         self.movable = DragType.Line
-        import PlotLab.Classes.View.LineItem as li
-        self.output_lines: Set[li.LineItem] = set()
-        self.input_line: li.LineItem = None
+        from PlotLab.Classes.View.LineItem import LineItem
+        self.output_lines: Set[LineItem] = set()
+        self.input_line: LineItem = None
+        self.out_value = None
 
     def get_lines(self):
         return list(self.output_lines) + ([] if self.input_line is None else [self.input_line])
@@ -37,6 +38,13 @@ class HandleItem(DiagramItem):
         pen = QPen(QColor("black"))
         pen.setWidth(1 if not self.hover else 3)
         qp.setPen(pen)
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        if self.type == HandleType.Output:
+            brush.setColor(QColor("red" if self.out_value is None else "green"))
+        elif self.type == HandleType.Input:
+            brush.setColor(QColor("orange" if self.input_line is None or self.input_line.source.out_value is None else "blue"))
+        qp.setBrush(brush)
         qp.drawEllipse(QRect(c.x() - r, c.y() - r, 2 * r, 2 * r))
         text_rect = QRectF(c.x() + r, c.y() - 2 * r, 2 * r, 4 * r) if self.type == HandleType.Input else QRectF(c.x() - 3*r, c.y() - 2 * r, 2 * r, 4 * r)
         qp.drawText(text_rect, self.radius, self.name)

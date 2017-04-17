@@ -1,4 +1,5 @@
-from typing import List
+import textwrap
+from typing import List, Dict, Any
 
 from PyQt5.QtCore import QSize, QPoint, QRect
 from PyQt5.QtGui import QPainter, QBrush, QColor
@@ -14,7 +15,6 @@ from PlotLab.Classes.View.DiagramItem import DiagramItem
 class NodeItem(DiagramItem):
     def __init__(self):
         super().__init__()
-        self.node: Node = Node()
         self.name = "Node"
         self.input_handlers: List[HandleItem] = []
         self.output_handlers: List[HandleItem] = []
@@ -22,9 +22,10 @@ class NodeItem(DiagramItem):
         self.handle_radius = 5
         self.text_height = 15
         self.function_body = ("@staticmethod\n"
-                              "def compute_values(self, values):\n"
-                              "  pass\n")
-
+                              "def compute_values(values):\n"
+                              "  %VALUES%\n"
+                              "  %RETURN%\n")
+        self.counter = 0
 
     def get_global_rect(self):
         c = self.global_center()
@@ -45,6 +46,11 @@ class NodeItem(DiagramItem):
         return list(result)
 
     def draw(self, qp: QPainter):
+        brush = QBrush()
+        brush.setStyle(Qt.SolidPattern)
+        brush.setColor(QColor("white"))
+        qp.setBrush(brush)
+
         rect = self.get_global_rect()
         brush = QBrush()
         brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
@@ -154,23 +160,73 @@ class NodeItem(DiagramItem):
             cy = - s.height() / 2 + s.height() / oN * (i + 0.5)
             self.output_handlers[i].center = QPoint(cx, cy)
 
-    def rebuild_handles(self):
-        self.input_handlers: List[HandleItem] = []
-        self.output_handlers: List[HandleItem] = []
-        for input in self.node.arguments:
-            ihandle = HandleItem()
-            ihandle.name = input
-            ihandle.type = HandleType.Input
-            ihandle.radius = self.handle_radius
-            ihandle.parent = self
-            self.input_handlers.append(ihandle)
-        for output in self.node.results:
-            ohandle = HandleItem()
-            ohandle.name = output
-            ohandle.type = HandleType.Output
-            ohandle.radius = self.handle_radius
-            ohandle.parent = self
-            self.output_handlers.append(ohandle)
+    # Compute
+    def is_ready_to_compute(self):
+        for i in self.input_handlers:
+            if i.input_line is None:
+                return False
+            else:
+                line = i.input_line
+                if line.source is None:
+                    return False
+                if line.source.out_value is None:
+                    return False
+        return True
+
+    def is_result_computed(self):
+        for r in self.output_handlers:
+            if r.out_value is None:
+                return False
+        return True
+
+    def get_next_counter(self):
+        self.counter += 1
+        return self.counter
+
+    def compute_function(self, values):
+        num = self.get_next_counter()
+        fun_name = "Node{}{}".format(self.name, num)
+
+        return_statement = "return {"
+        for r in self.output_handlers:
+            return_statement += "'{}': {}, ".format(r.name, r.name)
+        return_statement += "}"
+
+        value_assignment = "\n"
+        for key in values:
+            value_assignment += "  {} = {}".format(key, values[key]) + "\n"
+
+        fun_body = self.function_body.replace("%RETURN%", return_statement)
+        fun_body = fun_body.replace("%VALUES%", value_assignment)
+
+        body = textwrap.indent(fun_body, "  ")
+        body = "class {}:\n".format(fun_name) + body
+        f_call = "{}.compute_values(values)".format(fun_name)
+        try:
+            exec(body)
+            computed_result = eval(f_call)
+        except:
+            return False
+        for node_result in self.output_handlers:
+            if node_result.name not in computed_result:
+                return False
+
+        for node_result in self.output_handlers:
+            node_result.out_value = computed_result[node_result.name]
+        return True
+
+    def compute(self) -> bool:
+        if not self.is_ready_to_compute():
+            return False
+        inputs: Dict[str, Any] = {}
+        for i in self.input_handlers:
+            n = i.name
+            v = i.input_line.source.out_value
+            inputs[n] = v
+        return self.compute_function(inputs)
+
+
+
 
 
 

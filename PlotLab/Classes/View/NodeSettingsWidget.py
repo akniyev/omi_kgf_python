@@ -90,6 +90,8 @@ class NodeSettingsWidget(QWidget):
         output_names = self.results_textedit.text().split()
         self.node.set_node_outputs(output_names)
 
+        self.node.function_body = self.function_body_textedit.toPlainText()
+
         self.sender.reload_graph()
 
     def reset_action(self, sender):

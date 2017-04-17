@@ -32,6 +32,7 @@ if __name__ == "__main__":
     # bdi = BoxDiagramItem()
 
     gw = GraphWindow()
+    gw.setGeometry(100, 100, 600, 400)
     gw.show()
     # dw.add_diagram_item(bdi)
     # sw = NodeSettingsWidget()
