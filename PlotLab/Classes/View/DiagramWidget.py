@@ -205,7 +205,6 @@ class DiagramWidget(QWidget):
             self.repaint()
 
     def delete_node(self, node: NodeItem, repaint=True):
-        return
         node_lines = node.get_lines()
         for line in node_lines:
             self.delete_line(line)

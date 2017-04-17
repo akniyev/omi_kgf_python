@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import *
 
 from PlotLab.Classes.View.BoxDiagramItem import BoxDiagramItem
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
+from PlotLab.Classes.View.GraphWindow import GraphWindow
 from PlotLab.Classes.View.NodeItem import NodeItem
 from PlotLab.Classes.View.NodeSettingsWidget import NodeSettingsWidget
 
@@ -26,20 +27,22 @@ if __name__ == "__main__":
     # node_widget = OldDiagramWidget()
     # node_widget.show()
 
-    dw = DiagramWidget()
-    dw.show()
+    # dw = DiagramWidget()
+    # dw.show()
     # bdi = BoxDiagramItem()
 
+    gw = GraphWindow()
+    gw.show()
     # dw.add_diagram_item(bdi)
-    sw = NodeSettingsWidget()
-    dw.settings_widget = sw
-    sw.show()
-    for i in range(4):
-        ni = NodeItem()
-        ni.center = QPoint(randint(1, 400), randint(1, 400))
-        dw.add_diagram_item(ni)
-        ni.set_node_inputs(['x', 'y', 'z'])
-        ni.set_node_outputs(['a'])
+    # sw = NodeSettingsWidget()
+    # dw.settings_widget = sw
+    # sw.show()
+    # for i in range(4):
+    #     ni = NodeItem()
+    #     ni.center = QPoint(randint(1, 400), randint(1, 400))
+    #     dw.add_diagram_item(ni)
+    #     ni.set_node_inputs(['x', 'y', 'z'])
+    #     ni.set_node_outputs(['a'])
 
     sys.exit(app.exec_())
 
