@@ -29,6 +29,7 @@ class DiagramWidget(QWidget):
         self.dragging = None
         self.cursor_position = QPoint()
         self.last_press_cursor_position = QPoint()
+        self.ctrl_pressed = False
 
         from PlotLab.Classes.View import NodeSettingsWidget
         self.settings_widget: NodeSettingsWidget = None
@@ -98,11 +99,14 @@ class DiagramWidget(QWidget):
                     self.selected = set([item])
         elif item is None:
             self.selected = set()
-        print(self.selected)
         self.apply_selection()
 
     def apply_selection(self):
         items = self.get_all_diagram_items()
+        for item in items:
+            if type(item) == NodeItem or type(item) == LineItem:
+                item.selected = item in self.selected
+        items = self.get_all_lines()
         for item in items:
             if type(item) == NodeItem or type(item) == LineItem:
                 item.selected = item in self.selected
@@ -147,7 +151,14 @@ class DiagramWidget(QWidget):
             if dest_item is not None and type(dest_item) == HandleItem:
                 self.connect_with_line(self.dragging["source"], dest_item)
         elif math.fabs(self.last_press_cursor_position.x() - x) < 1 and math.fabs(self.last_press_cursor_position.y() - y) < 1:
-                self.select_deselect(self.get_first_item_under_cursor(x, y))
+            if self.dragging is not None and self.dragging["type"] == "scene":
+                old_cursor_pos = self.dragging["cursor"]
+                new_cursor_pos = event.pos()
+                diff: QPoint = (old_cursor_pos - new_cursor_pos)
+                if diff.x() ** 2 + diff.y() ** 2 <= 2:
+                    self.select_deselect(self.get_first_item_under_cursor(x, y), self.ctrl_pressed)
+            else:
+                self.select_deselect(self.get_first_item_under_cursor(x, y), self.ctrl_pressed)
         self.dragging = None
         self.repaint()
 
@@ -212,9 +223,16 @@ class DiagramWidget(QWidget):
     def transform_mouse_coordinates(self, x, y):
         return (x - self.offset.x()) / self.scale, (y - self.offset.y()) / self.scale
 
+    # Keyboard interaction
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() == Qt.Key_Control:
+            self.ctrl_pressed = True
+
     def keyReleaseEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Delete:
             self.delete_selected()
+        if event.key() == Qt.Key_Control:
+            self.ctrl_pressed = False
 
     # Add/Delete items
     def delete_line(self, line: LineItem, repaint=True):
