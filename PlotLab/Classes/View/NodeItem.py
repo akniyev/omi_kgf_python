@@ -26,6 +26,20 @@ class NodeItem(DiagramItem):
                               "  %VALUES%\n"
                               "  %RETURN%\n")
         self.counter = 0
+        self.error = False
+
+    def is_computed(self) -> bool:
+        if self.error:
+            return False
+        for h in self.output_handlers:
+            if h.out_value is None:
+                return False
+        return True
+
+    def invalidate_node(self):
+        self.error = False
+        for h in self.output_handlers:
+            h.out_value = None
 
     def get_global_rect(self):
         c = self.global_center()
@@ -48,12 +62,20 @@ class NodeItem(DiagramItem):
     def draw(self, qp: QPainter):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
-        brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
+
+        unselected_color = QColor("white") if not self.is_computed() else QColor(200, 255, 200)
+        selected_color = QColor(100, 100, 200) if not self.is_computed() else QColor(100, 150, 100)
+
+        if self.error:
+            unselected_color = QColor(255, 200, 200)
+            selected_color = QColor(150, 50, 50)
+
+        brush.setColor(unselected_color if not self.selected else selected_color)
         qp.setBrush(brush)
 
         rect = self.get_global_rect()
         brush = QBrush()
-        brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
+        brush.setColor(unselected_color if not self.selected else selected_color)
         brush.setStyle(Qt.SolidPattern)
         pen = QPen(QColor("black"))
         pen.setWidth(3 if self.hover else 1)
@@ -205,7 +227,7 @@ class NodeItem(DiagramItem):
             exec(body)
             computed_result = eval(f_call)
         except:
-            return False
+            return None
         for node_result in self.output_handlers:
             if node_result.name not in computed_result:
                 return False
@@ -222,7 +244,11 @@ class NodeItem(DiagramItem):
             n = i.name
             v = i.input_line.source.out_value
             inputs[n] = v
-        return self.compute_function(inputs)
+        result = self.compute_function(inputs)
+        if result is None:
+            self.error = True
+            return False
+        return result
 
 
 

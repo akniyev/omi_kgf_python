@@ -92,6 +92,8 @@ class NodeSettingsWidget(QWidget):
 
         self.node.function_body = self.function_body_textedit.toPlainText()
 
+        self.node.invalidate_node()
+
         self.sender.reload_graph()
 
     def reset_action(self, sender):

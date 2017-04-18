@@ -22,6 +22,8 @@ class LineItem(DiagramItem):
             if self in s.output_lines:
                 s.output_lines.remove(self)
             d.input_line = None
+            if d.parent is not None:
+                d.parent.invalidate_node()
 
     def set_ends(self, s: ha.HandleItem, d: ha.HandleItem):
         if s.parent is not None and d.parent is not None and self.no_cycle(d.parent, set([s.parent])):
