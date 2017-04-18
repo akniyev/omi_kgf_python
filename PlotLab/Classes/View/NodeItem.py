@@ -48,14 +48,13 @@ class NodeItem(DiagramItem):
     def draw(self, qp: QPainter):
         brush = QBrush()
         brush.setStyle(Qt.SolidPattern)
-        brush.setColor(QColor("white"))
+        brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
         qp.setBrush(brush)
 
         rect = self.get_global_rect()
         brush = QBrush()
         brush.setColor(QColor("white") if not self.selected else QColor(100, 100, 200))
         brush.setStyle(Qt.SolidPattern)
-        qp.fillRect(rect, brush)
         pen = QPen(QColor("black"))
         pen.setWidth(3 if self.hover else 1)
         qp.setPen(pen)

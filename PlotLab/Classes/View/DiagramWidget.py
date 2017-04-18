@@ -84,14 +84,29 @@ class DiagramWidget(QWidget):
         for item in smeti:
             item.draw(qp)
 
-    def select_deselect(self, item: DiagramItem):
+    def select_deselect(self, item: DiagramItem, ctrl = False):
         if type(item) == NodeItem or type(item) == LineItem:
             if item in self.selected:
-                self.selected.remove(item)
-                item.selected = False
+                if ctrl:
+                    self.selected.remove(item)
+                else:
+                    self.selected = set([item])
             else:
-                self.selected.add(item)
-                item.selected = True
+                if ctrl:
+                    self.selected.add(item)
+                else:
+                    self.selected = set([item])
+        elif item is None:
+            self.selected = set()
+        print(self.selected)
+        self.apply_selection()
+
+    def apply_selection(self):
+        items = self.get_all_diagram_items()
+        for item in items:
+            if type(item) == NodeItem or type(item) == LineItem:
+                item.selected = item in self.selected
+        self.reload_graph()
 
     @staticmethod
     def connect_with_line(h1: HandleItem, h2: HandleItem):
