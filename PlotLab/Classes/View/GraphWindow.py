@@ -27,7 +27,7 @@ class GraphWindow(QWidget):
         self.add_button.setFixedWidth(90)
         self.add_const_button = QPushButton("Add const")
         self.add_const_button.setFixedWidth(90)
-        self.calculate_button = QPushButton("One iteration")
+        self.calculate_button = QPushButton("Calculate")
         self.calculate_button.setFixedWidth(90)
         self.hbox_buttons.addWidget(self.add_button)
         self.hbox_buttons.addWidget(self.calculate_button)
@@ -48,6 +48,12 @@ class GraphWindow(QWidget):
         ni.center = QPoint(randint(1, 400), randint(1, 400))
         ni.set_node_inputs(['x', 'y'])
         ni.set_node_outputs(['a', 'b'])
+        ni.function_body = ("@staticmethod\n"
+                            "def compute_values(values):\n"
+                            "  %VALUES%\n"
+                            "  a = x\n"
+                            "  b = y\n"
+                            "  %RETURN%\n")
         self.diagram_widget.add_diagram_item(ni)
 
     def add_constant_node(self):
@@ -62,5 +68,5 @@ class GraphWindow(QWidget):
         self.diagram_widget.add_diagram_item(ni)
 
     def calculate(self):
-        self.diagram_widget.calculate_iteration()
+        self.diagram_widget.calculate()
         self.diagram_widget.reload_graph()

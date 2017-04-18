@@ -43,6 +43,7 @@ class DiagramWidget(QWidget):
 
     def add_diagram_item(self, item: DiagramItem):
         self.__items.append(item)
+        self.calculate()
         self.repaint()
 
     def paintEvent(self, event: QPaintEvent):
@@ -112,8 +113,7 @@ class DiagramWidget(QWidget):
                 item.selected = item in self.selected
         self.reload_graph()
 
-    @staticmethod
-    def connect_with_line(h1: HandleItem, h2: HandleItem):
+    def connect_with_line(self, h1: HandleItem, h2: HandleItem):
         if h1.type == HandleType.Input and h2.type == HandleType.Output:
             h = h1
             h1 = h2
@@ -122,6 +122,7 @@ class DiagramWidget(QWidget):
             return
         line = LineItem()
         line.set_ends(h1, h2)
+        self.calculate()
 
     def get_first_item_under_cursor(self, x, y):
         for item in self.get_all_diagram_items():
@@ -239,6 +240,7 @@ class DiagramWidget(QWidget):
         line.remove()
         if repaint:
             self.repaint()
+            self.calculate()
 
     def delete_node(self, node: NodeItem, repaint=True):
         node_lines = node.get_lines()
@@ -248,6 +250,7 @@ class DiagramWidget(QWidget):
             self.__items.remove(node)
         if repaint:
             self.repaint()
+            self.calculate()
 
     def delete_selected(self):
         for item in list(self.selected):
@@ -258,6 +261,7 @@ class DiagramWidget(QWidget):
                 elif type(item) == LineItem:
                     self.delete_line(item, False)
         self.repaint()
+        self.calculate()
 
     def reload_graph(self):
         self.repaint()
@@ -273,6 +277,16 @@ class DiagramWidget(QWidget):
 
     def calculate_iteration(self):
         nodes_to_calculate = self.calculated_inputs_nodes()
-        print(len(nodes_to_calculate))
+        # print(len(nodes_to_calculate))
         for node in nodes_to_calculate:
             node.compute()
+
+    def calculate(self):
+        nodes_to_calculate = self.calculated_inputs_nodes()
+        while len(nodes_to_calculate) > 0:
+            self.calculate_iteration()
+            nodes_to_calculate_new = self.calculated_inputs_nodes()
+            if set(nodes_to_calculate) == set(nodes_to_calculate_new):
+                nodes_to_calculate = []
+            else:
+                nodes_to_calculate = nodes_to_calculate_new

@@ -40,6 +40,9 @@ class NodeItem(DiagramItem):
         self.error = False
         for h in self.output_handlers:
             h.out_value = None
+            for line in h.output_lines:
+                if line.destination is not None and line.destination.parent is not None:
+                    line.destination.parent.invalidate_node()
 
     def get_global_rect(self):
         c = self.global_center()
@@ -215,7 +218,7 @@ class NodeItem(DiagramItem):
 
         value_assignment = "\n"
         for key in values:
-            value_assignment += "  {} = {}".format(key, values[key]) + "\n"
+            value_assignment += "  {} = {}".format(key, 'values["{}"]'.format(key)) + "\n"
 
         fun_body = self.function_body.replace("%RETURN%", return_statement)
         fun_body = fun_body.replace("%VALUES%", value_assignment)
