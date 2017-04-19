@@ -58,6 +58,10 @@ class DiagramWidget(QWidget):
         self.repaint()
         self.refresh_plots_widget()
 
+        if type(item) == PlotItem2d:
+            plot = self.plots_widget.get_plot_widget_for_id(item.get_id())
+            item.plot = plot
+
     def refresh_plots_widget(self):
         if self.plots_widget is not None:
             plots_ids = list(map(lambda x: x.get_id(), self.get_all_plots()))

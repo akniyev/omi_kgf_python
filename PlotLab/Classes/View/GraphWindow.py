@@ -22,6 +22,7 @@ class GraphWindow(QWidget):
 
         self.plots_widget = PlotsWidget()
         self.diagram_widget.plots_widget = self.plots_widget
+        self.plots_widget.setGeometry(10, 10, 800, 500)
         self.plots_widget.show()
 
         self.hbox_buttons = QHBoxLayout()
@@ -35,11 +36,14 @@ class GraphWindow(QWidget):
         self.add_2d_plot_button.setFixedWidth(90)
         self.add_const_button = QPushButton("Add const")
         self.add_const_button.setFixedWidth(90)
+        self.add_const_array_button = QPushButton("Add const array")
+        self.add_const_array_button.setFixedWidth(90)
         self.calculate_button = QPushButton("Calculate")
         self.calculate_button.setFixedWidth(90)
         self.hbox_buttons.addWidget(self.add_button)
         self.hbox_buttons.addWidget(self.calculate_button)
         self.hbox_buttons.addWidget(self.add_const_button)
+        self.hbox_buttons.addWidget(self.add_const_array_button)
         self.hbox_buttons.addWidget(self.add_2d_plot_button)
 
         self.vbox = QVBoxLayout()
@@ -52,6 +56,7 @@ class GraphWindow(QWidget):
         self.calculate_button.clicked.connect(self.calculate)
         self.add_const_button.clicked.connect(self.add_constant_node)
         self.add_2d_plot_button.clicked.connect(self.add_2d_plot_node)
+        self.add_const_array_button.clicked.connect(self.add_constant_array_node)
 
     def add_node(self):
         ni = NodeItem()
@@ -74,6 +79,17 @@ class GraphWindow(QWidget):
                             "def compute_values(values):\n"
                             "  %VALUES%\n"
                             "  a = 1\n"
+                            "  %RETURN%\n")
+        self.diagram_widget.add_diagram_item(ni)
+
+    def add_constant_array_node(self):
+        ni = NodeItem()
+        ni.center = QPoint(randint(1, 400), randint(1, 400))
+        ni.set_node_outputs(['a'])
+        ni.function_body = ("@staticmethod\n"
+                            "def compute_values(values):\n"
+                            "  %VALUES%\n"
+                            "  a = [1, 2, 3, 4, 5, 6, 7]\n"
                             "  %RETURN%\n")
         self.diagram_widget.add_diagram_item(ni)
 

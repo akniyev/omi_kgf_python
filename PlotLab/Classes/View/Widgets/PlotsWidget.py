@@ -43,7 +43,14 @@ class PlotsWidget(QWidget):
         if id in self.plots:
             return
         plot = MultiPlotWidget2d()
+        plot.add_plot('default')
         self.plots[id] = plot
         self.tabWidget.addTab(plot, "{}".format(id))
+
+    def get_plot_widget_for_id(self, id):
+        for i in range(self.tabWidget.count()):
+            if self.tabWidget.tabText(i) == "{}".format(id):
+                return self.tabWidget.widget(i)
+        return None
 
 
