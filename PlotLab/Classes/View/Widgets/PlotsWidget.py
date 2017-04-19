@@ -3,6 +3,7 @@ from typing import List, Dict
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabWidget
 
 from PlotLab.Classes.View.PlotItem2d import PlotItem2d
+from PlotLab.Classes.View.Widgets.MultiPlotWidget2d import MultiPlotWidget2d
 
 
 class PlotsWidget(QWidget):
@@ -41,7 +42,7 @@ class PlotsWidget(QWidget):
     def add_tab(self, id):
         if id in self.plots:
             return
-        plot = QWidget()
+        plot = MultiPlotWidget2d()
         self.plots[id] = plot
         self.tabWidget.addTab(plot, "{}".format(id))
 
