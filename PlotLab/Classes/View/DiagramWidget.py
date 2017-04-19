@@ -34,6 +34,8 @@ class DiagramWidget(QWidget):
 
         from PlotLab.Classes.View import NodeSettingsWidget
         self.settings_widget: NodeSettingsWidget = None
+        from PlotLab.Classes.View.Widgets.PlotsWidget import PlotsWidget
+        self.plots_widget: PlotsWidget = None
 
     def get_all_diagram_items(self) -> List[DiagramItem]:
         result = []
@@ -42,10 +44,24 @@ class DiagramWidget(QWidget):
             result.extend(item.get_children())
         return result
 
+    def get_all_plots(self) -> List[PlotItem2d]:
+        items = self.get_all_diagram_items()
+        result = []
+        for item in items:
+            if type(item) == PlotItem2d:
+                result.append(item)
+        return result
+
     def add_diagram_item(self, item: DiagramItem):
         self.__items.append(item)
         self.calculate()
         self.repaint()
+        self.refresh_plots_widget()
+
+    def refresh_plots_widget(self):
+        if self.plots_widget is not None:
+            plots_ids = list(map(lambda x: x.get_id(), self.get_all_plots()))
+            self.plots_widget.set_tabs(plots_ids)
 
     def paintEvent(self, event: QPaintEvent):
         qp = QPainter()
@@ -87,8 +103,8 @@ class DiagramWidget(QWidget):
         for item in smeti:
             item.draw(qp)
 
-    def select_deselect(self, item: DiagramItem, ctrl = False):
-        if type(item) == NodeItem or type(item) == LineItem:
+    def select_deselect(self, item: DiagramItem, ctrl=False):
+        if type(item) == NodeItem or type(item) == LineItem or type(item) == PlotItem2d:
             if item in self.selected:
                 if ctrl:
                     self.selected.remove(item)
@@ -106,7 +122,7 @@ class DiagramWidget(QWidget):
     def apply_selection(self):
         items = self.get_all_diagram_items()
         for item in items:
-            if type(item) == NodeItem or type(item) == LineItem:
+            if type(item) == NodeItem or type(item) == PlotItem2d:
                 item.selected = item in self.selected
         items = self.get_all_lines()
         for item in items:
@@ -252,17 +268,19 @@ class DiagramWidget(QWidget):
         if repaint:
             self.repaint()
             self.calculate()
+            self.refresh_plots_widget()
 
     def delete_selected(self):
         for item in list(self.selected):
             self.selected.remove(item)
             if item is not None:
-                if type(item) == NodeItem:
+                if type(item) == NodeItem or type(item) == PlotItem2d:
                     self.delete_node(item, False)
                 elif type(item) == LineItem:
                     self.delete_line(item, False)
         self.repaint()
         self.calculate()
+        self.refresh_plots_widget()
 
     def reload_graph(self):
         self.repaint()

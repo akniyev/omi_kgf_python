@@ -8,6 +8,7 @@ from PlotLab.Classes.View.DiagramWidget import DiagramWidget
 from PlotLab.Classes.View.NodeItem import NodeItem
 from PlotLab.Classes.View.NodeSettingsWidget import NodeSettingsWidget
 from PlotLab.Classes.View.PlotItem2d import PlotItem2d
+from PlotLab.Classes.View.Widgets.PlotsWidget import PlotsWidget
 
 
 class GraphWindow(QWidget):
@@ -18,6 +19,10 @@ class GraphWindow(QWidget):
         self.diagram_widget.settings_widget = self.settings_widget
         self.settings_widget.setFixedWidth(350)
         self.diagram_widget.setFocusPolicy(Qt.ClickFocus)
+
+        self.plots_widget = PlotsWidget()
+        self.diagram_widget.plots_widget = self.plots_widget
+        self.plots_widget.show()
 
         self.hbox_buttons = QHBoxLayout()
         self.hbox = QHBoxLayout()

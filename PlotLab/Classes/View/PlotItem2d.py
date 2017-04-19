@@ -15,5 +15,5 @@ class PlotItem2d(NodeItem):
     def is_result_computed(self):
         return False
 
-    def calculate_iteration(self):
-        print("PLOT")
+    def compute(self):
+        print("PLOT!")

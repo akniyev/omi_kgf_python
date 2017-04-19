@@ -12,7 +12,12 @@ class DragType(Enum):
 
 
 class DiagramItem:
+    __id = 0
+
     def __init__(self):
+        self.id = DiagramItem.__id
+        DiagramItem.__id += 1
+
         self.parent: DiagramItem = None
         self.hover = False
         self.selected = False
@@ -24,6 +29,9 @@ class DiagramItem:
             return self.center
         else:
             return self.center + self.parent.global_center()
+
+    def get_id(self):
+        return self.id
 
     def get_lines(self):
         return []
