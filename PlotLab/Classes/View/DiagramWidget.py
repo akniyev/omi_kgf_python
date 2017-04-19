@@ -10,6 +10,7 @@ from PlotLab.Classes.View.DiagramItem import DiagramItem, DragType
 from PlotLab.Classes.View.HandleItem import HandleItem, HandleType
 from PlotLab.Classes.View.LineItem import LineItem
 from PlotLab.Classes.View.NodeItem import NodeItem
+from PlotLab.Classes.View.PlotItem2d import PlotItem2d
 
 
 class DiagramWidget(QWidget):
@@ -272,6 +273,9 @@ class DiagramWidget(QWidget):
         for node in self.__items:
             if type(node) == NodeItem:
                 if node.is_ready_to_compute() and not node.is_result_computed():
+                    result.append(node)
+            elif type(node) == PlotItem2d:
+                if node.is_ready_to_compute():
                     result.append(node)
         return result
 

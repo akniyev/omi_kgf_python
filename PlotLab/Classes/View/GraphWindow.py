@@ -7,6 +7,7 @@ from PyQt5.Qt import *
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
 from PlotLab.Classes.View.NodeItem import NodeItem
 from PlotLab.Classes.View.NodeSettingsWidget import NodeSettingsWidget
+from PlotLab.Classes.View.PlotItem2d import PlotItem2d
 
 
 class GraphWindow(QWidget):
@@ -25,6 +26,8 @@ class GraphWindow(QWidget):
 
         self.add_button = QPushButton("Add node")
         self.add_button.setFixedWidth(90)
+        self.add_2d_plot_button = QPushButton("Add plot2d")
+        self.add_2d_plot_button.setFixedWidth(90)
         self.add_const_button = QPushButton("Add const")
         self.add_const_button.setFixedWidth(90)
         self.calculate_button = QPushButton("Calculate")
@@ -32,6 +35,7 @@ class GraphWindow(QWidget):
         self.hbox_buttons.addWidget(self.add_button)
         self.hbox_buttons.addWidget(self.calculate_button)
         self.hbox_buttons.addWidget(self.add_const_button)
+        self.hbox_buttons.addWidget(self.add_2d_plot_button)
 
         self.vbox = QVBoxLayout()
         self.vbox.addLayout(self.hbox)
@@ -42,6 +46,7 @@ class GraphWindow(QWidget):
         self.add_button.clicked.connect(self.add_node)
         self.calculate_button.clicked.connect(self.calculate)
         self.add_const_button.clicked.connect(self.add_constant_node)
+        self.add_2d_plot_button.clicked.connect(self.add_2d_plot_node)
 
     def add_node(self):
         ni = NodeItem()
@@ -65,6 +70,11 @@ class GraphWindow(QWidget):
                             "  %VALUES%\n"
                             "  a = 1\n"
                             "  %RETURN%\n")
+        self.diagram_widget.add_diagram_item(ni)
+
+    def add_2d_plot_node(self):
+        ni = PlotItem2d()
+        ni.center = QPoint(randint(1, 400), randint(1, 400))
         self.diagram_widget.add_diagram_item(ni)
 
     def calculate(self):
