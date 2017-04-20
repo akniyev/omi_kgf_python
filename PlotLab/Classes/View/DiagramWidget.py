@@ -64,8 +64,13 @@ class DiagramWidget(QWidget):
 
     def refresh_plots_widget(self):
         if self.plots_widget is not None:
-            plots_ids = list(map(lambda x: x.get_id(), self.get_all_plots()))
+            all_plots = self.get_all_plots()
+            plots_ids = list(map(lambda x: x.get_id(), all_plots))
             self.plots_widget.set_tabs(plots_ids)
+            names_for_plots = {}
+            for p in all_plots:
+                names_for_plots[p.get_id()] = p.name
+            self.plots_widget.set_tab_names(names_for_plots)
 
     def paintEvent(self, event: QPaintEvent):
         qp = QPainter()
@@ -123,7 +128,7 @@ class DiagramWidget(QWidget):
             self.selected = set()
         self.apply_selection()
         if len(self.selected) == 1:
-            item = self.selected.pop()
+            item = next(iter(self.selected))
             self.open_settings(item)
         else:
             self.open_settings(None)
@@ -233,15 +238,6 @@ class DiagramWidget(QWidget):
             self.offset += QPoint(delta_x, delta_y)
 
         self.repaint()
-
-    # def mouseDoubleClickEvent(self, event: QMouseEvent):
-    #     (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
-    #     item = self.get_first_item_under_cursor(x, y)
-    #     if item is not None and type(item) == NodeItem:
-    #         self.open_settings(item)
-    #     elif item is not None and type(item) == HandleItem:
-    #         if item.type == HandleType.Output:
-    #             print("VALUE: %s" % item.out_value)
 
     def open_settings(self, node: NodeItem):
         if self.settings_widget is not None:

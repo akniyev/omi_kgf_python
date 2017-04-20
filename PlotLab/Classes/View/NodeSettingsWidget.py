@@ -3,6 +3,7 @@ from PyQt5.Qt import *
 
 from PlotLab.Classes.View.DiagramWidget import DiagramWidget
 from PlotLab.Classes.View.NodeItem import NodeItem
+from PlotLab.Classes.View.PlotItem2d import PlotItem2d
 
 
 class NodeSettingsWidget(QWidget):
@@ -67,27 +68,42 @@ class NodeSettingsWidget(QWidget):
         self.load_ui_from_node(node)
 
     def load_ui_from_node(self, node: NodeItem):
+        self.name_textedit.setText("")
+        self.arguments_textedit.setText("")
+        self.results_textedit.setText("")
+        self.function_body_textedit.setText("")
+        self.setEnabled(False)
         if node is None:
-            self.name_textedit.setText("")
-            self.arguments_textedit.setText("")
-            self.results_textedit.setText("")
-            self.function_body_textedit.setText("")
-            self.setEnabled(False)
             return
+
         self.setEnabled(True)
-        self.name_textedit.setText(node.name)
+        self.name_textedit.setEnabled(True)
+        self.arguments_textedit.setEnabled(True)
+        self.results_textedit.setEnabled(True)
+        self.function_body_textedit.setEnabled(True)
 
-        args_string = ""
-        for arg in node.input_handlers:
-            args_string += arg.name + " "
-        self.arguments_textedit.setText(args_string)
+        if type(node) == NodeItem:
+            self.name_textedit.setText(node.name)
 
-        res_string = ""
-        for res in node.output_handlers:
-            res_string += res.name + " "
-        self.results_textedit.setText(res_string)
+            args_string = ""
+            for arg in node.input_handlers:
+                args_string += arg.name + " "
+            self.arguments_textedit.setText(args_string)
 
-        self.function_body_textedit.setText(node.function_body)
+            res_string = ""
+            for res in node.output_handlers:
+                res_string += res.name + " "
+            self.results_textedit.setText(res_string)
+
+            self.function_body_textedit.setText(node.function_body)
+        elif type(node) == PlotItem2d:
+            self.function_body_textedit.setEnabled(False)
+            self.results_textedit.setEnabled(False)
+            self.name_textedit.setText(node.name)
+            args_string = ""
+            for arg in node.input_handlers:
+                args_string += arg.name + " "
+            self.arguments_textedit.setText(args_string)
 
     def save_action(self, sender: DiagramWidget):
         if self.node is None:
@@ -107,6 +123,11 @@ class NodeSettingsWidget(QWidget):
         self.sender.calculate()
 
         self.sender.reload_graph()
+
+        if type(self.node) == PlotItem2d:
+            # print({self.node.get_id(): self.node.name})
+            if self.sender.plots_widget is not None:
+                self.sender.plots_widget.set_tab_names({self.node.get_id(): self.node.name})
 
     def reset_action(self, sender):
         if self.node is not None:

@@ -30,6 +30,13 @@ class PlotsWidget(QWidget):
         for id in ids_to_add:
             self.add_tab(id)
 
+    def set_tab_names(self, tab_names: Dict[int, str]):
+        for id in tab_names:
+            if id in self.plots:
+                tab_id = self.get_tab_bar_index_for_id(id)
+                if tab_id is not None:
+                    self.tabWidget.setTabText(tab_id, tab_names[id])
+
     def remove_tab(self, id: int):
         if id not in self.plots:
             return
@@ -48,9 +55,23 @@ class PlotsWidget(QWidget):
         self.tabWidget.addTab(plot, "{}".format(id))
 
     def get_plot_widget_for_id(self, id):
-        for i in range(self.tabWidget.count()):
-            if self.tabWidget.tabText(i) == "{}".format(id):
-                return self.tabWidget.widget(i)
+        if id in self.plots:
+            return self.plots[id]
         return None
+
+    def get_tab_bar_index_for_id(self, id):
+        if id in self.plots:
+            widget = self.plots[id]
+            tab_index = None
+            for i in range(self.tabWidget.count()):
+                if self.tabWidget.widget(i) == widget:
+                    tab_index = i
+                    break
+            if tab_index is None:
+                return None
+            else:
+                return tab_index
+        else:
+            return None
 
 
