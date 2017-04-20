@@ -122,6 +122,11 @@ class DiagramWidget(QWidget):
         elif item is None:
             self.selected = set()
         self.apply_selection()
+        if len(self.selected) == 1:
+            item = self.selected.pop()
+            self.open_settings(item)
+        else:
+            self.open_settings(None)
 
     def apply_selection(self):
         items = self.get_all_diagram_items()
@@ -229,18 +234,21 @@ class DiagramWidget(QWidget):
 
         self.repaint()
 
-    def mouseDoubleClickEvent(self, event: QMouseEvent):
-        (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
-        item = self.get_first_item_under_cursor(x, y)
-        if item is not None and type(item) == NodeItem:
-            self.open_settings(item)
-        elif item is not None and type(item) == HandleItem:
-            if item.type == HandleType.Output:
-                print("VALUE: %s" % item.out_value)
+    # def mouseDoubleClickEvent(self, event: QMouseEvent):
+    #     (x, y) = self.transform_mouse_coordinates(event.x(), event.y())
+    #     item = self.get_first_item_under_cursor(x, y)
+    #     if item is not None and type(item) == NodeItem:
+    #         self.open_settings(item)
+    #     elif item is not None and type(item) == HandleItem:
+    #         if item.type == HandleType.Output:
+    #             print("VALUE: %s" % item.out_value)
 
     def open_settings(self, node: NodeItem):
         if self.settings_widget is not None:
-            self.settings_widget.load_node(node, self)
+            if node is not None:
+                self.settings_widget.load_node(node, self)
+            else:
+                self.settings_widget.load_node(None, self)
 
     def transform_mouse_coordinates(self, x, y):
         return (x - self.offset.x()) / self.scale, (y - self.offset.y()) / self.scale

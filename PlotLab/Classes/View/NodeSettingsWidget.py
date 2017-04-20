@@ -59,12 +59,22 @@ class NodeSettingsWidget(QWidget):
         self.cancel_button.clicked.connect(self.reset_action)
         self.ok_button.clicked.connect(self.save_action)
 
+        self.load_node(None, None)
+
     def load_node(self, node: NodeItem, sender: DiagramWidget):
         self.node = node
         self.sender = sender
         self.load_ui_from_node(node)
 
     def load_ui_from_node(self, node: NodeItem):
+        if node is None:
+            self.name_textedit.setText("")
+            self.arguments_textedit.setText("")
+            self.results_textedit.setText("")
+            self.function_body_textedit.setText("")
+            self.setEnabled(False)
+            return
+        self.setEnabled(True)
         self.name_textedit.setText(node.name)
 
         args_string = ""
