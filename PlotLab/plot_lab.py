@@ -10,6 +10,7 @@ from PlotLab.Classes.View.GraphWindow import GraphWindow
 from PlotLab.Classes.View.NodeItem import NodeItem
 from PlotLab.Classes.View.NodeSettingsWidget import NodeSettingsWidget
 from PlotLab.Classes.View.Widgets.PlotsWidget import PlotsWidget
+from math import *
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
