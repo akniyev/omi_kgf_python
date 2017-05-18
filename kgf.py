@@ -63,8 +63,8 @@ class Form(QWidget):
     @staticmethod
     def k(x, y):
         C = 0.1
-        return 1.0 / (x ** 2 + y ** 2 + C)
-        # return 1.0 / (fabs(sin(x + y)) + 0.1)
+        # return 1.0 / (x ** 2 + y ** 2 + C)
+        return 1.0 / (fabs(sin(x + y)) + 0.1)
         # return 1.0 / (fabs(sin((x + y) / 0.50255)) + 0.1) # from about 1.04 to 1.05 it becomes more and more unstable
         # return 1.0 / (fabs(sin(x) * cos(x) + sin(y)) + 0.1)
         # return 1.0 / (fabs(sin(x + y)) + fabs(cos(x)) + fabs(cos(y)) + 0.1) + fabs(sin(x))
