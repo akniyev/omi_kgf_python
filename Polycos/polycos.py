@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import *
 from MultiPlot2d import MultiPlot2d
 from scipy.fftpack import dct, idct
 
-f = lambda x: (abs(cos(x))) ** 2 + 0.2 * sin(10 * cos(x))
+f = lambda x: abs(x) * x # (abs(cos(x))) ** 2 + 0.2 * sin(10 * cos(x))
 alphas = []
 global_xs = []
 # m = 17
@@ -131,13 +131,16 @@ if __name__ == "__main__":
         plot.set_plot_data('m_sums', m_sums_xs, m_sums)
         plot.refresh()
 
-        print(max(m_sums))
+        # print(max(m_sums))
 
 
     def calculate_F_sum():
         m = int(txt.text())
         n = int(txt_n.text())
 
+        calculate_F_sum_with_params(m, n)
+
+    def calculate_F_sum_with_params(m, n):
         xs = [pi * i / m for i in range(m + 1)]
         ys = [f(xs[i]) for i in range(m + 1)]
 
@@ -159,22 +162,23 @@ if __name__ == "__main__":
             return alpha(i) * cos(x) + beta(i)
 
 
-        N = 5000
+        N = 300000
+        nn = 100000
         l_disc_x = [t(i, N) for i in range(N)]
         l_disc_y = [l(x) for x in l_disc_x]
 
-        l_disc_coeffs = [c / (2 * N) for c in dct(l_disc_y)]
+        l_disc_coeffs = [c / N for c in dct(l_disc_y)]
 
         for i in range(n+1, N):
             l_disc_coeffs[i] = 0
 
 
-        l_disc_y_restored = idct(l_disc_coeffs)
+        l_disc_y_restored = [c / 2 for c in idct(l_disc_coeffs)]
 
         f_disc_diff = [l_disc_y_restored[i] - f(l_disc_x[i]) for i in range(N)]
 
-        print("diff")
-        print(max(f_disc_diff))
+        print("n = %.0f, Sn-f = %.20f" % (n, max(f_disc_diff[:nn])))
+        # print(max(f_disc_diff))
         # def a0():
         #     sum = 0
         #
@@ -220,6 +224,22 @@ if __name__ == "__main__":
         plot.set_plot_data('F_sum_minus_f', l_disc_x, f_disc_diff)
         plot.refresh()
 
+
+    # calculate_F_sum_with_params(1, 1)
+    # calculate_F_sum_with_params(2, 2)
+    # calculate_F_sum_with_params(4, 4)
+    # calculate_F_sum_with_params(8, 8)
+    # calculate_F_sum_with_params(10, 10)
+    # calculate_F_sum_with_params(16, 16)
+    # calculate_F_sum_with_params(20, 20)
+    # calculate_F_sum_with_params(40, 40)
+    # calculate_F_sum_with_params(80, 80)
+    # calculate_F_sum_with_params(100, 100)
+    # calculate_F_sum_with_params(200, 200)
+    # calculate_F_sum_with_params(400, 400)
+    # calculate_F_sum_with_params(800, 800)
+    # calculate_F_sum_with_params(1000, 1000)
+    # calculate_F_sum_with_params(10000, 10000)
 
     plot.show()
     btn.pressed.connect(calculate)

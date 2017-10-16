@@ -6,11 +6,11 @@ from random import randrange
 
 
 class PlotInfo:
-    def __init__(self, name, color, description=""):
+    def __init__(self, name, color, description="",visible=True):
         super().__init__()
         self.name = name
         self.description = description
-        self.visible = True
+        self.visible = visible
         self.color = color
 
     name = ""
@@ -21,13 +21,13 @@ class PlotInfo:
 
 
 class MultiPlot2d(QWidget):
-    def add_plot(self, name, color=0, description=""):
+    def add_plot(self, name, color=0, description="", visible=True):
         if color == 0:
             color = (randrange(0, 255), randrange(0, 255), randrange(0, 255), 255)
         if name in self.__plot_data__:
             print('Plot with this name already exists!')
             return
-        self.__plot_data__[name] = PlotInfo(name, color, description)
+        self.__plot_data__[name] = PlotInfo(name, color, description, visible)
 
     def remove_plot(self, name):
         if name in self.__plot_data__:
@@ -37,9 +37,9 @@ class MultiPlot2d(QWidget):
         """ get_plot_names() -> [String]"""
         return self.__plot_data__.keys()
 
-    def get_plot_info(self, name):
+    def get_plot_info(self, name: str) -> PlotInfo:
         """ get_plot_info(name) -> PlotInfo"""
-        self.__plot_data__[name]
+        return self.__plot_data__[name]
 
     def set_plot_data(self, name, xs, ys, description=""):
         if name in self.__plot_data__ and len(xs) == len(ys):
@@ -64,8 +64,9 @@ class MultiPlot2d(QWidget):
         self.__legend_model__.clear()
         for key in self.__plot_data__:
             item = QStandardItem()
+            item.keyString = key
             description = self.__plot_data__[key].description
-            item.setText(key)
+            item.setText("%s [%s]" %(description, key))
             item.setCheckable(True)
             item.setCheckState(Qt.Checked if self.__plot_data__[key].visible else Qt.Unchecked)
             self.__legend_model__.appendRow(item)
@@ -77,6 +78,7 @@ class MultiPlot2d(QWidget):
         self.__plot_widget__ = pg.PlotWidget()
         self.__legend_widget__ = QListView()
         self.__plot_widget__.setBackground((255, 255, 255))
+        self.__plot_widget__.plotItem.showGrid(True, True, 0.4)
 
         vbox = QVBoxLayout(self)
         splitter = QSplitter()
@@ -96,7 +98,7 @@ class MultiPlot2d(QWidget):
             self.refresh()
 
     def legend_clicked(self, item):
-        name = item.text()
+        name = item.keyString
         plot_info = self.__plot_data__[name]
         if item.checkState() == Qt.Checked:
             plot_info.visible = True
@@ -114,7 +116,7 @@ class MultiPlot2d(QWidget):
                 pi = pg.PlotDataItem()
 
                 pw.addItem(pi)
-                print(plot_info.color)
+                # print(plot_info.color)
                 pi.setData(x=plot_info.xs, y=plot_info.ys, pen=plot_info.color)
 
 import sys
