@@ -49,7 +49,8 @@ def calculate_Rn(f: Callable[[float], float], node_xs: List[float], n: int, max_
             msum = 0.0
             for i in range(1, m):
                 msum += (alpha(i-1) - alpha(i)) * ((sin((k-1)*node_xs[i]))/(k-1) - (sin((k+1)*node_xs[i]))/(k+1))
-            result += cos(k*x) / k * msum
+                # msum += (alpha(i - 1) - alpha(i)) * ((sin((k - 1) * node_xs[i])))
+            result += (cos(k*x) / k) * msum
             global max_msum
             if abs(msum) > max_msum:
                 max_msum = abs(msum)
@@ -71,7 +72,7 @@ def calculate_Rn(f: Callable[[float], float], node_xs: List[float], n: int, max_
     global max_msum
     max_msum = 0.0
     ys = [abs(R(x)) for x in xs]
-    print(max_msum)
+    print("max_m_sum = %s" % max_msum)
     return (xs, ys)
 
 
@@ -171,8 +172,8 @@ if __name__ == "__main__":
         plot.set_plot_data('f-Sn(l(f))', l_xs, f_Sn_l_diff_ys)
 
         # Rn(l,x)
-        N_Rn = 300
-        max_k = 100
+        N_Rn = 1000
+        max_k = 500
         (Rn_xs, Rn_ys) = calculate_Rn(f, node_xs, n + 1, max_k, N_Rn)
         plot.set_plot_data('Rn', Rn_xs, Rn_ys)
 
