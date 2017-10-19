@@ -7,7 +7,7 @@ from numpy import array_equal
 from MultiPlot2d import MultiPlot2d
 from Polycos.FunctionApproximation import *
 
-f = lambda x: abs(cos(x)) ** 3
+f = lambda x: abs(cos(x / 2)) ** 3
 max_msum = 0.0
 
 def calculate_l(f: Callable[[float], float], node_xs: List[float], out_discretization: int) -> Tuple[List[float], List[float]]:
@@ -172,8 +172,8 @@ if __name__ == "__main__":
         plot.set_plot_data('f-Sn(l(f))', l_xs, f_Sn_l_diff_ys)
 
         # Rn(l,x)
-        N_Rn = 1000
-        max_k = 500
+        N_Rn = 100
+        max_k = 100
         (Rn_xs, Rn_ys) = calculate_Rn(f, node_xs, n + 1, max_k, N_Rn)
         plot.set_plot_data('Rn', Rn_xs, Rn_ys)
 
