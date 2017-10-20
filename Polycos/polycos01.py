@@ -7,7 +7,7 @@ from numpy import array_equal
 from MultiPlot2d import MultiPlot2d
 from Polycos.FunctionApproximation import *
 
-f = lambda x: abs(cos(x / 2)) ** 3
+f = lambda x: abs(sin(x)) ** 3
 max_msum = 0.0
 
 def calculate_l(f: Callable[[float], float], node_xs: List[float], out_discretization: int) -> Tuple[List[float], List[float]]:
