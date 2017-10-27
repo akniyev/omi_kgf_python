@@ -93,14 +93,14 @@ N = 10
 #     maxmsum = max(maxmsum, abs(s))
 # print(maxmsum)
 
-# m = 10
-# maxmsum = 0.0
-# for max_k in range(m + 1, 2 * m):
-#     s = sum([msum(k, m) for k in range(m, max_k + 1)])
-#     s1 = sum_msum(m, max_k)
-#     print("k = %4i to %4i, msum = %18.13f / %18.13f, current_max = %18.13f" % (m, max_k, s, s1, maxmsum))
-#     maxmsum = max(maxmsum, abs(s))
-# print("max = %10.5f" % maxmsum)
+m = 10
+maxmsum = 0.0
+for max_k in range(m + 1, 2 * m):
+    s = sum([msum(k, m) for k in range(m, max_k + 1)])
+    s1 = sum_msum(m, max_k)
+    #print("k = %4i to %4i, msum = %18.13f / %18.13f, current_max = %18.13f" % (m, max_k, s, s1, maxmsum))
+    maxmsum = max(maxmsum, abs(s))
+print("max = %10.5f" % maxmsum)
 
 # maxsum = 0.0
 #
