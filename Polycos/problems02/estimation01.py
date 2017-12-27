@@ -57,7 +57,7 @@ if __name__ == "__main__":
     plot.add_plot('R', (0, 0, 0), 'R')
     #plot.add_plot('f-Sn', (128, 128, 128), 'Difference between the function and its Fourier sum', False)
 
-    INF = 200_000
+    INF = 200000
     N = 40000
     m = 10000
     n = 10000
