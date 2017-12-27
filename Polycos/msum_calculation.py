@@ -39,7 +39,7 @@ def calculate_Rn(f: Callable[[float], float], node_xs: List[float], n: int, max_
         return s
 
     xs = [k for k in range(m+1, max_k)]
-    ys = [abs(msum(k)) for k in xs]
+    ys = [msum(k)/k for k in xs]
 
     # xs = [i for i in range(1, m-1)]
     # ys = [2 * alpha(i) - alpha(i + 1) - alpha(i - 1) for i in range(1, m-1)]
