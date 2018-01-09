@@ -56,7 +56,7 @@ if __name__ == "__main__":
         D = int(txt_D.text())
 
         tj = lambda i: 2 * pi * i / N - pi
-        f = lambda x: np.sign(sin(x))
+        f = lambda x: abs(x)
 
         a = [f(tj(i)) for i in range(N)]
 

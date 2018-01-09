@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/omi_kgf_python.iml" filepath="$PROJECT_DIR$/.idea/omi_kgf_python.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/omi_kgf_python.iml" filepath="$PROJECT_DIR$/.idea/omi_kgf_python.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/test_plot.iml" filepath="$PROJECT_DIR$/.idea/test_plot.iml" />
     </modules>
   </component>
